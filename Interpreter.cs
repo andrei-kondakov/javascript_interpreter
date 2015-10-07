@@ -3,15 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace JavaScriptInterpreter
 {
-    class Program
+    public class Interpreter
     {
-        static void Main(string[] args)
-        {
-            Console.ReadLine();
-        }
+
     }
 }

@@ -51,7 +51,7 @@ namespace JavaScriptInterpreter
         }
         public override string ToString()
         {
-            return String.Format("({0},{1}", line, pos);
+            return String.Format("({0},{1})", line, pos);
         }
         public bool IsWhiteSpace
         {
@@ -79,8 +79,7 @@ namespace JavaScriptInterpreter
             get
             {
                 return index != text.Length && Char.IsDigit(text, index);
-            }
-            
+            }            
         }
         public bool IsNewLine
         {

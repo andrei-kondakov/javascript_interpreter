@@ -6,15 +6,6 @@ using System.Threading.Tasks;
 
 namespace JavaScriptInterpreter
 {
-    public enum DomainTag
-    {
-        IDENT,
-        NUMBER,
-        STRING,
-        RESERVED_WORD,
-        SEMICOLON,
-        END_OF_PROGRAM
-    }
     public abstract class Token
     {
         public readonly DomainTag Tag;
@@ -25,14 +16,24 @@ namespace JavaScriptInterpreter
             this.Tag = tag;
             this.Coords = new Fragment(starting, following);
         }
+        public override string ToString()
+        {
+            return Coords.ToString() + " " + Tag.ToString();
+        }
     }
     public class IdentToken : Token
     {
         public readonly int Code;
+        public readonly string Name;
 
-        public IdentToken(int code, Position starting, Position following) : base(DomainTag.IDENT, starting, following)
+        public IdentToken(int code, string name, Position starting, Position following) : base(DomainTag.IDENT, starting, following)
         {
             this.Code = code;
+            this.Name = name;
+        }
+        public override string ToString()
+        {
+            return base.ToString() + " " + Name + " " + Code;
         }
     }
     public class NumberToken : Token
@@ -44,6 +45,10 @@ namespace JavaScriptInterpreter
         {
             this.Value = value;
         }
+        public override string ToString()
+        {
+            return base.ToString() + " " + Value;
+        }
     }
     public class StringToken : Token
     {
@@ -54,6 +59,10 @@ namespace JavaScriptInterpreter
         {
             this.Value = value;
         }
+        public override string ToString()
+        {
+            return base.ToString() + " " + Value;
+        }
     }
     public class ReservedWordToken : Token
     {
@@ -63,6 +72,10 @@ namespace JavaScriptInterpreter
             : base(DomainTag.RESERVED_WORD, starting, following)
         {
             this.ReservedWord = reservedWord;
+        }
+        public override string ToString()
+        {
+            return base.ToString() + " " + ReservedWord;
         }
     }
     public class SpecToken : Token

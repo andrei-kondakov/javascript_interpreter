@@ -11,7 +11,8 @@ namespace JavaScriptInterpreter
     {
         static void Main(string[] args)
         {
-               
+            Interpreter js_interpreter = new Interpreter("");
+            js_interpreter.Start();
             Console.ReadLine();
         }
     }

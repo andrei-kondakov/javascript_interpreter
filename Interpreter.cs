@@ -11,13 +11,11 @@ namespace JavaScriptInterpreter
         //private SortedList<Position, Message> messages;
         private Dictionary<string, int> nameCodes;      // имена в кода
         private List<string> names;                     // коды в имена
-        private Lexer lexer;
         public Interpreter(string sourceCode)
         {
           //  this.messages = new SortedList<Position, Message>();
             this.nameCodes = new Dictionary<string, int>();
             this.names = new List<string>();
-            lexer = new Lexer(sourceCode,this);
         }
 
         public int AddName(string name)
@@ -67,10 +65,28 @@ namespace JavaScriptInterpreter
         //        Console.WriteLine(p.Value.Text);
         //    }
         //}
+        public Lexer GetLexer(string program)
+        {
+            return new Lexer(program, this);
+        }
         public void Start()
         {
-            while (true)
+            try
             {
+                Token token;
+                while (true)
+                {
+                    Console.Write(">");
+                    Lexer lexer = this.GetLexer(Console.ReadLine());
+                    while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
+                    {
+                        Console.WriteLine(token.ToString());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
     }

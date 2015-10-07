@@ -34,17 +34,19 @@ namespace JavaScriptInterpreter
         RSHIFT,
         AND,
         OR,
-        
+
         // логические операторы
         LOGICAL_AND,
         LOGICAL_OR,
         LOGICAL_EQUAL,
         LOGICAL_NOT_EQUAL,
-        END_OF_PROGRAM,
+        LOGICAL_NOT,
         LESS,
         LARGER,
         LESS_OR_EQUAL,
         LARGER_OR_EQUAL,
+
+        END_OF_PROGRAM
     }
     public class Lexer
     {
@@ -106,8 +108,6 @@ namespace JavaScriptInterpreter
                         return new SpecToken(DomainTag.LPARENT, start, ++cur);
                     case ')':
                         return new SpecToken(DomainTag.RPARENT, start, ++cur);
-                    case '=':
-                        return new SpecToken(DomainTag.EQUAL, start, ++cur);
                     case ';':
                         return new SpecToken(DomainTag.SEMICOLON, start, ++cur);
                     case ',':
@@ -126,45 +126,65 @@ namespace JavaScriptInterpreter
                         {
                             return new SpecToken(DomainTag.INCREMENT, start, ++cur);
                         }
-                        return new SpecToken(DomainTag.PLUS, start, ++cur);
+                        return new SpecToken(DomainTag.PLUS, start, cur);
                     case '-':
                         if ((++cur).Cp == '-')
                         {
                             return new SpecToken(DomainTag.DECREMENT, start, ++cur);
                         }
-                        return new SpecToken(DomainTag.MINUS, start, ++cur);
+                        return new SpecToken(DomainTag.MINUS, start, cur);
                     case '*':
                         return new SpecToken(DomainTag.MUL, start, ++cur);
                     case '/':
                         return new SpecToken(DomainTag.DIV, start, ++cur);
                     case '%':
                         return new SpecToken(DomainTag.PERCENT, start, ++cur);
-                    //// побитовые операторы
-                    //LSHIFT,
-                    //RSHIFT,
-                    //AND,
-                    //OR,
-
-                    //// логические операторы
-                    //LOGICAL_AND,
-                    //LOGICAL_OR,
-                    //LOGICAL_EQUAL,
-                    //LOGICAL_NOT_EQUAL,
-                    //END_OF_PROGRAM,
-                    //LESS,
-                    //LARGER,
-                    //LESS_OR_EQUAL,
-                    //LARGER_OR_EQUAL,
                     case '>':
-                        if ((++cur).Cp == '>')
+                        int ch = (++cur).Cp;
+                        if (ch == '>')
                         {
                             return new SpecToken(DomainTag.RSHIFT, start, ++cur);
                         }
-                        else if ((++cur).Cp=='=')
+                        else if (ch == '=')
                         {
                             return new SpecToken(DomainTag.LARGER_OR_EQUAL, start, ++cur);
                         }
-                        return new SpecToken(DomainTag.LARGER, start, ++cur);
+                        return new SpecToken(DomainTag.LARGER, start, cur);
+                    case '<':
+                        ch = (++cur).Cp;
+                        if (ch == '<')
+                        {
+                            return new SpecToken(DomainTag.LSHIFT, start, ++cur);
+                        }
+                        else if (ch == '=')
+                        {
+                            return new SpecToken(DomainTag.LESS_OR_EQUAL, start, ++cur);
+                        }
+                        return new SpecToken(DomainTag.LESS, start, cur);
+                    case '&':
+                        if ((++cur).Cp == '&')
+                        {
+                            return new SpecToken(DomainTag.LOGICAL_AND, start, ++cur);
+                        }
+                        return new SpecToken(DomainTag.AND, start, cur);
+                    case '|':
+                        if ((++cur).Cp == '|')
+                        {
+                            return new SpecToken(DomainTag.LOGICAL_OR, start, ++cur);
+                        }
+                        return new SpecToken(DomainTag.OR, start, cur);
+                    case '=':
+                        if ((++cur).Cp == '=')
+                        {
+                            return new SpecToken(DomainTag.LOGICAL_EQUAL, start, ++cur);
+                        }
+                        return new SpecToken(DomainTag.EQUAL, start, cur);
+                    case '!':
+                        if ((++cur).Cp == '=')
+                        {
+                            return new SpecToken(DomainTag.LOGICAL_NOT_EQUAL, start, ++cur);
+                        }
+                        return new SpecToken(DomainTag.LOGICAL_NOT, start, cur);
                     default:
                         {
                             //Console.WriteLine(cur.IsLetter);

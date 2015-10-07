@@ -6,12 +6,16 @@ using System.Threading.Tasks;
 
 namespace JavaScriptInterpreter
 {
-    enum DomainTag
+    public enum DomainTag
     {
         IDENT,
-        NUMBER
+        NUMBER,
+        STRING,
+        RESERVED_WORD,
+        SEMICOLON,
+        END_OF_PROGRAM
     }
-    abstract class Token
+    public abstract class Token
     {
         public readonly DomainTag Tag;
         public readonly Fragment Coords;
@@ -22,7 +26,7 @@ namespace JavaScriptInterpreter
             this.Coords = new Fragment(starting, following);
         }
     }
-    class IdentToken : Token
+    public class IdentToken : Token
     {
         public readonly int Code;
 
@@ -31,14 +35,42 @@ namespace JavaScriptInterpreter
             this.Code = code;
         }
     }
-    class NumberToken : Token
+    public class NumberToken : Token
     {
-        public readonly long Value;
+        public readonly Int64 Value;
 
-        public NumberToken(long value, Position starting, Position following)
+        public NumberToken(Int64 value, Position starting, Position following)
             : base(DomainTag.NUMBER, starting, following)
         {
             this.Value = value;
+        }
+    }
+    public class StringToken : Token
+    {
+        public readonly string Value;
+
+        public StringToken(string value, Position starting, Position following)
+            : base(DomainTag.STRING, starting, following)
+        {
+            this.Value = value;
+        }
+    }
+    public class ReservedWordToken : Token
+    {
+        public readonly string ReservedWord;
+
+        public ReservedWordToken(string reservedWord, Position starting, Position following)
+            : base(DomainTag.RESERVED_WORD, starting, following)
+        {
+            this.ReservedWord = reservedWord;
+        }
+    }
+    public class SpecToken : Token
+    {
+        public SpecToken(DomainTag tag, Position starting, Position following)
+            : base(tag, starting, following)
+        {
+
         }
     }
 }

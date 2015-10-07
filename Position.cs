@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JavaScriptInterpreter
 {
-    struct Position : IComparable<Position>
+    public struct Position : IComparable<Position>
     {
         private string text;
         private int line, pos, index;
@@ -80,6 +80,7 @@ namespace JavaScriptInterpreter
             {
                 return index != text.Length && Char.IsDigit(text, index);
             }
+            
         }
         public bool IsNewLine
         {
@@ -121,7 +122,7 @@ namespace JavaScriptInterpreter
             return p;
         }
     }
-    struct Fragment
+    public struct Fragment
     {
         public readonly Position Starting, Following;
 

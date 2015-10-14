@@ -76,7 +76,7 @@ namespace JavaScriptInterpreter
                 Token token;
                 while (true)
                 {
-                    Console.Write(">");
+                    Console.Write("> ");
                     Lexer lexer = this.GetLexer(Console.ReadLine());
                     while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
                     {

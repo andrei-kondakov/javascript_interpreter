@@ -11,6 +11,7 @@ namespace JavaScriptInterpreter
         //private SortedList<Position, Message> messages;
         private Dictionary<string, int> nameCodes;      // имена в кода
         private List<string> names;                     // коды в имена
+        private bool debug=true;
         public Interpreter(string sourceCode)
         {
           //  this.messages = new SortedList<Position, Message>();
@@ -74,13 +75,22 @@ namespace JavaScriptInterpreter
             try
             {
                 Token token;
+                Queue<Token> lexems= new Queue<Token>();
                 while (true)
                 {
                     Console.Write("> ");
                     Lexer lexer = this.GetLexer(Console.ReadLine());
                     while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
                     {
-                        Console.WriteLine(token.ToString());
+                        lexems.Enqueue(token);
+                    }
+                    if (debug)
+                    {
+                        Console.WriteLine("-----Lexer result:");
+                        foreach (Token tkn in lexems)
+                        {
+                            Console.WriteLine(tkn.ToString());
+                        }
                     }
                 }
             }

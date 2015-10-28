@@ -13,7 +13,8 @@ namespace JavaScriptInterpreter
         {
             Interpreter js_interpreter = new Interpreter("");
             js_interpreter.Start();
-            Console.ReadLine();
+            Console.WriteLine("Press any key to continue"); 
+            Console.ReadKey();
         }
     }
 }

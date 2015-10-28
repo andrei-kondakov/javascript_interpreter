@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace JavaScriptInterpreter
 {
     public class Interpreter
     {
-        //private SortedList<Position, Message> messages;
         private Dictionary<string, int> nameCodes;      // имена в кода
         private List<string> names;                     // коды в имена
-        private bool debug=true;
+        private bool debug = true;
         public Interpreter(string sourceCode)
         {
-          //  this.messages = new SortedList<Position, Message>();
+            //  this.messages = new SortedList<Position, Message>();
             this.nameCodes = new Dictionary<string, int>();
             this.names = new List<string>();
         }
@@ -46,26 +46,6 @@ namespace JavaScriptInterpreter
         {
             throw new Exception(String.Format("Error {0}: {1}", pos.ToString(), text));
         }
-        //public void AddMessage(bool isError, Position pos, string text)
-        //{
-        //    messages[pos] = new Message(isError, text);
-        //}
-        //public void OutputMessages()
-        //{
-        //    foreach (KeyValuePair<Position, Message> p in messages)
-        //    {
-        //        if (p.Value.IsError)
-        //        {
-        //            Console.Write("Error");
-        //        }
-        //        else
-        //        {
-        //            Console.Write("Warning");
-        //        }
-        //        Console.Write(" " + p.Key + ": ");
-        //        Console.WriteLine(p.Value.Text);
-        //    }
-        //}
         public Lexer GetLexer(string program)
         {
             return new Lexer(program, this);
@@ -75,11 +55,15 @@ namespace JavaScriptInterpreter
             try
             {
                 Token token;
-                Queue<Token> lexems= new Queue<Token>();
-                while (true)
+                Queue<Token> lexems = new Queue<Token>();
+                bool fromFile = true;
+                if (fromFile)
                 {
-                    Console.Write("> ");
-                    Lexer lexer = this.GetLexer(Console.ReadLine());
+                    string program = File.ReadAllText(@"D:\Dropbox\dev\js_interpreter\js_interpreter\program.txt");
+                    //Console.WriteLine("> input:");
+                    Console.WriteLine(program);
+                    //Console.WriteLine("> end of input");
+                    Lexer lexer = this.GetLexer(program);
                     while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
                     {
                         lexems.Enqueue(token);
@@ -90,6 +74,29 @@ namespace JavaScriptInterpreter
                         foreach (Token tkn in lexems)
                         {
                             Console.WriteLine(tkn.ToString());
+                        }
+                    }
+                    Parser parser = new Parser(lexems, this);
+                    parser.Start();
+                }
+                else
+                {
+
+                    while (true)
+                    {
+                        Console.Write("> ");
+                        Lexer lexer = this.GetLexer(Console.ReadLine());
+                        while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
+                        {
+                            lexems.Enqueue(token);
+                        }
+                        if (debug)
+                        {
+                            Console.WriteLine("-----Lexer result:");
+                            foreach (Token tkn in lexems)
+                            {
+                                Console.WriteLine(tkn.ToString());
+                            }
                         }
                     }
                 }

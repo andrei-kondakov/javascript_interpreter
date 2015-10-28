@@ -19,7 +19,14 @@ namespace JavaScriptInterpreter
         }
         private Token nextToken()
         {
-            return lexems.Dequeue();
+            if (lexems.Count != 0)
+            {
+                return lexems.Dequeue();
+            }
+            else
+            {
+                return new SpecToken(DomainTag.END_OF_PROGRAM, sym.Coords.Starting, sym.Coords.Following);
+            }
         }
         private bool checkTokenTag(DomainTag tag)
         {
@@ -169,14 +176,15 @@ namespace JavaScriptInterpreter
         {
             parseTerminal(DomainTag.IDENT);
            
-            if (inFirstOfAssignmentExpressionNoIn())   // Sym in first(Initialiser)
+            if (checkTokenTag(DomainTag.EQUAL))   // Sym in first(Initialiser)
             {
                 parseInitialiser();
             }
         }
-        // Initialiser = AssignmentExpression
+        // Initialiser = "=" AssignmentExpression
         private void parseInitialiser()
         {
+            parseTerminal(DomainTag.EQUAL);
             parseAssignmentExpressionNoIn();
         }
 

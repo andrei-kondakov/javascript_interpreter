@@ -100,7 +100,7 @@ namespace JavaScriptInterpreter
             {
                 parseEmptyStatement();
             }
-            else if (inFirstOfExpressionStatement()) // TODO: sym in first(ExpressionStatement)
+            else if (inFirstOfExpressionStatement()) // sym in first(ExpressionStatement)
             {
                 parseExpressionStatement();
             }
@@ -168,8 +168,8 @@ namespace JavaScriptInterpreter
         private void parseVariableDeclartion()
         {
             parseTerminal(DomainTag.IDENT);
-            // TODO
-            if (true)   // Sym in first(Initialiser)
+           
+            if (inFirstOfAssignmentExpressionNoIn())   // Sym in first(Initialiser)
             {
                 parseInitialiser();
             }
@@ -249,20 +249,19 @@ namespace JavaScriptInterpreter
             {
                 parseReservedWord("for");
                 parseTerminal(DomainTag.LPARENT);
-                // TODO
                 if (!checkReservedWord("var"))
                 {
-                    if (true)  // sym in first(expression)
+                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
                     {
                         parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
-                    if (true)  // sym in first(expression)
+                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
                     {
                         parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
-                    if (true)  // sym in first(expression)
+                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
                     {
                         parseExpressionNoIn();
                     }
@@ -271,12 +270,12 @@ namespace JavaScriptInterpreter
                 {
                     //  | for "(" var VariableDeclarations ";" [Expression] ";" [Expression] ) Statement 
                     parseVariableStatement();
-                    if (true)  // sym in first(expression)
+                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
                     {
                         parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
-                    if (true)  // sym in first(expression)
+                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
                     {
                         parseExpressionNoIn();
                     }
@@ -478,7 +477,7 @@ namespace JavaScriptInterpreter
         private void parseObjectLiteral()
         {
             parseTerminal(DomainTag.LBRACE);
-            if (true) // sym in first(propertyNamesAndValues)
+            if (inFirstOfPropertyNamesAndValues()) // sym in first(propertyNamesAndValues)
             {
                 parsePropertyNamesAndValues();
             }
@@ -556,7 +555,6 @@ namespace JavaScriptInterpreter
         // QUESTION !!!!!
         private void parseMemberExpression()
         {
-            // TODO
             if (inFirstOfPrimaryExpression())   // Sym in first(PrimaryExpression)
             {
                 parsePrimaryExpression();
@@ -588,8 +586,7 @@ namespace JavaScriptInterpreter
 
         // NewExpression = MemberExpression | new NewExpression
         private void parseNewExpression()
-        {
-            // TODO
+        {            
             if (inFirstOfMemberExpression()) // sym in first(MemberExpression)
             {
                 parseMemberExpression();
@@ -643,7 +640,7 @@ namespace JavaScriptInterpreter
         // ArgumentList = [ArugmentList ","] AssignmentExpression
         private void parseArgumentList()
         {
-            if (true) // sym in first(assignmentexpression)
+            if (inFirstOfAssignmentExpressionNoIn()) // sym in first(assignmentexpression)
             {
                 parseArgumentList();
                 parseTerminal(DomainTag.COMMA);

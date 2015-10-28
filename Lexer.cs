@@ -12,15 +12,17 @@ namespace JavaScriptInterpreter
         NUMBER,
         STRING,
         RESERVED_WORD,
-        SEMICOLON,
-        COMMA,
-        EQUAL,
-        LPARENT,
-        RPARENT,
-        LBRACE,
-        RBRACE,
-        COLON,
-        POINT,
+        SEMICOLON,  // ;
+        COMMA,      // ,
+        EQUAL,      // =
+        LPARENT,    // (
+        RPARENT,    // )
+        LBRACE,     // {
+        RBRACE,     // }
+        LSBRACKET,  // [
+        RSBRACKET,  // ]
+        COLON,      // :   
+        POINT,      // .
         // арифмитические операторы
         INCREMENT,
         DECREMENT,
@@ -45,7 +47,9 @@ namespace JavaScriptInterpreter
         LARGER,
         LESS_OR_EQUAL,
         LARGER_OR_EQUAL,
+        XOR,            // ^
 
+        QUESTION,
         END_OF_PROGRAM
     }
     public class Lexer
@@ -116,6 +120,10 @@ namespace JavaScriptInterpreter
                         return new SpecToken(DomainTag.LBRACE, start, ++cur);
                     case '}':
                         return new SpecToken(DomainTag.RBRACE, start, ++cur);
+                    case '[':
+                        return new SpecToken(DomainTag.LSBRACKET, start, ++cur);
+                    case ']':
+                        return new SpecToken(DomainTag.RSBRACKET, start, ++cur);
                     case ':':
                         return new SpecToken(DomainTag.COLON, start, ++cur);
                     case '.':
@@ -167,6 +175,11 @@ namespace JavaScriptInterpreter
                             return new SpecToken(DomainTag.LOGICAL_AND, start, ++cur);
                         }
                         return new SpecToken(DomainTag.AND, start, cur);
+                    case '^':
+                        return new SpecToken(DomainTag.XOR, start, ++cur);
+                    case '?':
+                        return new SpecToken(DomainTag.QUESTION, start, ++cur);
+                    
                     case '|':
                         if ((++cur).Cp == '|')
                         {
@@ -210,7 +223,7 @@ namespace JavaScriptInterpreter
                                 } while (cur.IsDecimalDigit);
                                 try
                                 {
-                                    Int64 number = Convert.ToInt64(Program.Substring(start.Index, cur.Index - start.Index));
+                                    Int64 number = System.Convert.ToInt64(Program.Substring(start.Index, cur.Index - start.Index));
                                     return new NumberToken(number, start, cur);
                                 }
                                 catch (System.OverflowException)

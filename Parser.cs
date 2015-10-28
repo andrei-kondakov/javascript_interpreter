@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JavaScriptInterpreter
 {
-    class Parser
+    partial class Parser
     {
         private Queue<Token> lexems;
         private Token sym;
@@ -28,14 +28,6 @@ namespace JavaScriptInterpreter
         private bool checkReservedWord(string reservedWord)
         {
             return checkTokenTag(DomainTag.RESERVED_WORD) && ((ReservedWordToken)sym).ReservedWord.Equals(reservedWord);
-        }
-        private bool inFirstOfStatement()
-        {
-            // TODO: sym in first(ExpressionStatement)
-            return checkTokenTag(DomainTag.LBRACE) || checkReservedWord("var") || checkTokenTag(DomainTag.SEMICOLON) ||
-                checkReservedWord("if") || checkReservedWord("for") || checkReservedWord("while") || checkReservedWord("do") ||
-                checkReservedWord("break") || checkReservedWord("continue") || checkReservedWord("return") ||
-                checkReservedWord("switch");
         }
         private void parseTerminal(DomainTag tag)
         {
@@ -108,7 +100,7 @@ namespace JavaScriptInterpreter
             {
                 parseEmptyStatement();
             }
-            else if (true) // TODO: sym in first(ExpressionStatement)
+            else if (inFirstOfExpressionStatement()) // TODO: sym in first(ExpressionStatement)
             {
                 parseExpressionStatement();
             }
@@ -185,7 +177,7 @@ namespace JavaScriptInterpreter
         // Initialiser = AssignmentExpression
         private void parseInitialiser()
         {
-            parseAssignmentExpression();
+            parseAssignmentExpressionNoIn();
         }
 
         // Пустая строка
@@ -201,7 +193,7 @@ namespace JavaScriptInterpreter
         {
             if (!checkTokenTag(DomainTag.LBRACE) && !checkReservedWord("function"))
             {
-                parseExpression();
+                parseExpressionNoIn();
             }
             parseTerminal(DomainTag.SEMICOLON);
         }
@@ -212,7 +204,7 @@ namespace JavaScriptInterpreter
         {
             parseReservedWord("if");
             parseTerminal(DomainTag.LPARENT);
-            parseExpression();
+            parseExpressionNoIn();
             parseTerminal(DomainTag.RPARENT);
             parseStatement();
             if (checkReservedWord("else"))
@@ -241,7 +233,7 @@ namespace JavaScriptInterpreter
                 parseStatement();
                 parseReservedWord("while");
                 parseTerminal(DomainTag.LBRACE);
-                parseExpression();
+                parseExpressionNoIn();
                 parseTerminal(DomainTag.RBRACE);
                 parseTerminal(DomainTag.SEMICOLON);
             }
@@ -249,7 +241,7 @@ namespace JavaScriptInterpreter
             {
                 parseReservedWord("while");
                 parseTerminal(DomainTag.LPARENT);
-                parseExpression();
+                parseExpressionNoIn();
                 parseTerminal(DomainTag.RPARENT);
                 parseStatement();
             }
@@ -262,17 +254,17 @@ namespace JavaScriptInterpreter
                 {
                     if (true)  // sym in first(expression)
                     {
-                        parseExpression();
+                        parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
                     if (true)  // sym in first(expression)
                     {
-                        parseExpression();
+                        parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
                     if (true)  // sym in first(expression)
                     {
-                        parseExpression();
+                        parseExpressionNoIn();
                     }
                 }
                 else
@@ -281,12 +273,12 @@ namespace JavaScriptInterpreter
                     parseVariableStatement();
                     if (true)  // sym in first(expression)
                     {
-                        parseExpression();
+                        parseExpressionNoIn();
                     }
                     parseTerminal(DomainTag.SEMICOLON);
                     if (true)  // sym in first(expression)
                     {
-                        parseExpression();
+                        parseExpressionNoIn();
                     }
                 }
                 parseTerminal(DomainTag.RPARENT);
@@ -329,7 +321,7 @@ namespace JavaScriptInterpreter
         {
             parseReservedWord("switch");
             parseTerminal(DomainTag.LPARENT);
-            parseExpression();
+            parseExpressionNoIn();
             parseTerminal(DomainTag.RPARENT);
             parseCaseBlock();
         }
@@ -428,16 +420,565 @@ namespace JavaScriptInterpreter
 
 
         // --------------------------------------Выражения ---------------------------------------//
-        // AssignmentExpression = ConditionalExpression | LeftHandSideExpression AssignmentOperator AssignmentExpression
-        //TODO
-        void parseAssignmentExpression()
+        // Первичные выражения
+        // PrimaryExpression = this | Identifier | Literal | ArrayLiteral | ObjectLiteral | "(" Expression ")"
+        // PrimaryExpression = this | Identifier | Literal | ObjectLiteral | "(" ExpressionNoIn ")"
+        private void parsePrimaryExpression()
+        {
+            if (checkReservedWord("this"))
+            {
+                parseReservedWord("this");
+            }
+            else if (checkTokenTag(DomainTag.IDENT))
+            {
+                parseTerminal(DomainTag.IDENT);
+            }
+            else if (inFirstOfLiteral())
+            {
+                parseLiteral();
+            }
+            else if (inFirstOfObjectLiteral())
+            {
+                parseObjectLiteral();
+            }
+            else// if (checkTokenTag(DomainTag.LPARENT)){
+            {
+                parseTerminal(DomainTag.LPARENT);
+                parseExpressionNoIn();
+                parseTerminal(DomainTag.RPARENT);
+            }
+        }
+        //Literal = NullLiteral | BooleanLiteral | NumericLiteral | StringLiteral 
+        private void parseLiteral()
+        {
+            if (checkReservedWord("null"))
+            {
+                parseReservedWord("null");
+            }
+            else if (checkReservedWord("true"))
+            {
+                parseReservedWord("true");
+            }
+            else if (checkReservedWord("false"))
+            {
+                parseReservedWord("false");
+            }
+            else if (checkTokenTag(DomainTag.NUMBER))
+            {
+                parseTerminal(DomainTag.NUMBER);
+            }
+            else
+            {
+                parseTerminal(DomainTag.STRING);
+            }
+        }
+
+        // Инциализация объекта
+        // ObjectLiteral = "{" "}" | "{" PropertyNamesAndValues "}"
+        private void parseObjectLiteral()
+        {
+            parseTerminal(DomainTag.LBRACE);
+            if (true) // sym in first(propertyNamesAndValues)
+            {
+                parsePropertyNamesAndValues();
+            }
+            parseTerminal(DomainTag.RBRACE);
+
+        }
+        // PropertyNamesAndValues = { PropertyNamesAndValues "," } PropertyAssignment 
+        private void parsePropertyNamesAndValues()
+        {
+            while (inFirstOfPropertyNamesAndValues()) // sym in first(propertyNamesAndValues)
+            {
+                parsePropertyNamesAndValues();
+                parseTerminal(DomainTag.COMMA);
+            }
+            parsePropertyAssignment();
+        }
+        
+        // PropertyAssignment = PropertyName ":" AssignmentExpression | get PropertyName "(" ")" "{" FunctionBody "}" | 
+        //                          | set PropertyName "(" PropertySetParameters ")" "{" FunctionBody "}".
+        private void parsePropertyAssignment()
+        {
+            if (inFirstOfProperyName()) // First(Propertyname)
+            {
+                parsePropertyName();
+                parseTerminal(DomainTag.COLON);
+                parseAssignmentExpressionNoIn();
+            }
+            else if (checkReservedWord("get"))
+            {
+                parseReservedWord("get");
+                parsePropertyName();
+                parseTerminal(DomainTag.LPARENT);
+                parseTerminal(DomainTag.RPARENT);
+                parseTerminal(DomainTag.LBRACE);
+                parseFunctionBody();
+                parseTerminal(DomainTag.RBRACE);
+            }
+            else
+            {
+                parseReservedWord("set");
+                parsePropertyName();
+                parseTerminal(DomainTag.LPARENT);
+                parsePropertySetParameters();
+                parseTerminal(DomainTag.RPARENT);
+                parseTerminal(DomainTag.LBRACE);
+                parseFunctionBody();
+                parseTerminal(DomainTag.RBRACE);
+            }
+        }
+
+        // QUESTION = NumericLiteral?
+        // PropertyName = IdentifierName | StringLiteral | NumericLiteral
+        // PropertyName = IdentifierName | StringLiteral
+        private void parsePropertyName()
+        {
+            if (checkTokenTag(DomainTag.IDENT))
+            {
+                parseTerminal(DomainTag.IDENT);
+            }
+            else
+            {
+                parseTerminal(DomainTag.STRING);
+            }
+        }
+        // TODO IN FUTURE
+        private void parsePropertySetParameters()
         {
 
         }
-        //TODO
-        void parseExpression()
-        {
 
+
+        // Левосторонние выражения
+        // MemberExpression = PrimaryExpression | FunctionExpression | MemberExpression "[" Expression "]" 
+        //                      | MemberExpression "." Identifier | new MemberExpression Arguments
+        // QUESTION !!!!!
+        private void parseMemberExpression()
+        {
+            // TODO
+            if (inFirstOfPrimaryExpression())   // Sym in first(PrimaryExpression)
+            {
+                parsePrimaryExpression();
+            }
+            else if (checkReservedWord("function"))
+            {
+                parseFunctionExpression();
+            }else if (inFirstOfMemberExpression()) // Sym in first(MemberExpression) 
+            {
+                parseMemberExpression();
+                if (checkTokenTag(DomainTag.LSBRACKET))
+                {
+                    parseTerminal(DomainTag.LSBRACKET);
+                    parseExpressionNoIn();
+                    parseTerminal(DomainTag.RSBRACKET);
+                }
+                else //if (checkTokenTag(DomainTag.POINT))
+                {
+                    parseTerminal(DomainTag.POINT);
+                    parseTerminal(DomainTag.IDENT);
+                }
+            }
+            else //if (checkReservedWord("new"))
+            {
+                parseMemberExpression();
+                parseArguments();
+            }
         }
+
+        // NewExpression = MemberExpression | new NewExpression
+        private void parseNewExpression()
+        {
+            // TODO
+            if (inFirstOfMemberExpression()) // sym in first(MemberExpression)
+            {
+                parseMemberExpression();
+            }
+            else
+            {
+                parseReservedWord("new");
+                parseNewExpression();
+            }
+        }
+        // CallExpression = MemberExpression Arguments | CallExpression Arguments | CallExpression "[" Expression "]" 
+        //                  | CallExpression . Identifier
+
+        private void parseCallExpression()
+        {
+            if (inFirstOfMemberExpression()) // sym in first(memberexpression)
+            {
+                parseMemberExpression();
+                parseArguments();
+            }
+            else if (inFirstOfCallExpression()) // sym in first(callexpression)
+            {
+                parseCallExpression();
+                if (checkTokenTag(DomainTag.LPARENT))
+                {
+                    parseArguments();
+                }
+                else if (checkTokenTag(DomainTag.LBRACE))
+                {
+                    parseTerminal(DomainTag.LBRACE);
+                    parseExpressionNoIn();
+                    parseTerminal(DomainTag.RBRACE);
+                }
+                else
+                {
+                    parseTerminal(DomainTag.POINT);
+                    parseTerminal(DomainTag.IDENT);
+                }
+            }
+        }
+        // Arguments = "(" [ArgumentList] ")"
+        private void parseArguments()
+        {
+            parseTerminal(DomainTag.LPARENT);
+            if (checkTokenTag(DomainTag.IDENT))
+            {
+                parseArgumentList();
+            }
+            parseTerminal(DomainTag.RPARENT);
+        }
+        // ArgumentList = [ArugmentList ","] AssignmentExpression
+        private void parseArgumentList()
+        {
+            if (true) // sym in first(assignmentexpression)
+            {
+                parseArgumentList();
+                parseTerminal(DomainTag.COMMA);
+            }
+            parseAssignmentExpressionNoIn();
+        }
+        // LeftHandSideExpression = NewExpression | CallExpression
+        private void parseLeftHandSideExpression()
+        {
+            if (inFirstOfNewExpression()) // sym in NewExpression
+            {
+                parseNewExpression();
+            }
+            else
+            {
+                parseCallExpression();
+            }
+        }
+
+        // Потсфиксные выражения
+        // PostfixExpression = LeftHandSideExpression | LeftHandSideExpression "++" | LeftHandSideExpression "--"
+        private void parsePostfixExpression()
+        {
+            parseLeftHandSideExpression();
+            if (checkTokenTag(DomainTag.INCREMENT))
+            {
+                parseTerminal(DomainTag.INCREMENT);
+            }
+            else if (checkTokenTag(DomainTag.DECREMENT))
+            {
+                parseTerminal(DomainTag.DECREMENT);
+            }
+        }
+
+
+        // Унарные операторы
+        // UnaryExpression = PostfixExpression | delete UnaryExpression | void UnaryExpression | typeof UnarryExpression |
+        //                      | "++" UnaryExpression | "--" UnaryExpression | "+" UnaryExpression | "-" UnaryExpression
+        //                      | "~" UnaryExpresssion | "!" UnaryExpression 
+        // UnaryExpression = PostfixExpression | delete UnaryExpression | void UnaryExpression | typeof UnarryExpression |
+        //                      | "++" UnaryExpression | "--" UnaryExpression | "+" UnaryExpression | "-" UnaryExpression
+        
+        private void parseUnaryExpression()
+        {
+            if (inFirstOfPostfixExpression())   // sym in first(postfixexpression)
+            {
+                parsePostfixExpression();
+            }
+            else if (checkReservedWord("delete"))
+            {
+                parseReservedWord("delete");
+                parseUnaryExpression();
+            }
+            else if (checkReservedWord("void"))
+            {
+                parseReservedWord("void");
+                parseUnaryExpression();
+            }
+            else if (checkReservedWord("typeof"))
+            {
+                parseReservedWord("typeof");
+                parseUnaryExpression();
+            }
+            else if (checkTokenTag(DomainTag.INCREMENT))
+            {
+                parseTerminal(DomainTag.INCREMENT);
+                parseUnaryExpression();
+            }
+            else if (checkTokenTag(DomainTag.DECREMENT))
+            {
+                parseTerminal(DomainTag.DECREMENT);
+                parseUnaryExpression();
+            }
+            else if (checkTokenTag(DomainTag.PLUS))
+            {
+                parseTerminal(DomainTag.PLUS);
+                parseUnaryExpression();
+            }
+            else if (checkTokenTag(DomainTag.MINUS))
+            {
+                parseTerminal(DomainTag.MINUS);
+                parseUnaryExpression();
+            }
+        }
+
+        // Мультипликативные
+        // MultiplicativeExpression = UnaryExpression | MultiplicativeExpression "*" UnaryExpression |
+        //                              | MultiplicativeExpression "/" UnaryExpression | MultiplicativeExpression "%" UnaryExpression
+        private void parseMultiplicativeExpression()
+        {
+            if (inFirstOfUnaryExpression()) // sym in first(unaryExpression)
+            {
+                parseUnaryExpression();
+            }
+            else
+            {
+                parseMultiplicativeExpression();
+                if (checkTokenTag(DomainTag.MUL))
+                {
+                    parseTerminal(DomainTag.MUL);
+                }
+                else if (checkTokenTag(DomainTag.DIV))
+                {
+                    parseTerminal(DomainTag.DIV);
+                }
+                else
+                {
+                    parseTerminal(DomainTag.PERCENT);
+                }
+                parseUnaryExpression();
+            }
+        }
+        // Аддитивные операторы
+        // AdditiveExpression = MultiplicativeExpression | AdditiveExpression "+" MultiplicativeExpression |
+        //                          | AdditiveExpression "-" MultiplicativeExpression
+        private void parseAdditiveExpression()
+        {
+            if (inFirstOfMultiplicativeExpression()) // sym in first MultiplicativeExpression
+            {
+                parseMultiplicativeExpression();
+            }
+            else
+            {
+                parseAdditiveExpression();
+                if (checkTokenTag(DomainTag.PLUS))
+                {
+                    parseTerminal(DomainTag.PLUS);
+                }
+                else
+                {
+                    parseTerminal(DomainTag.MINUS);
+                }
+                parseMultiplicativeExpression();
+            }
+        }
+        // Операторы побитового сдвига
+        // ShiftExpression = AdditiveExpression | ShiftExpression "<<" AdditiveExrpession 
+        //                      | ShiftExpression ">>" AdditiveExpression
+        private void parseShiftExpression()
+        {
+            if (inFirstOfAdditiveExpression()) // sym in first(additiveExpression)
+            {
+                parseAdditiveExpression();
+            }
+            else
+            {
+                parseShiftExpression();
+                if (checkTokenTag(DomainTag.LSHIFT))
+                {
+                    parseTerminal(DomainTag.LSHIFT);
+                }
+                else
+                {
+                    parseTerminal(DomainTag.RSHIFT);
+                }
+                parseAdditiveExpression();
+            }
+        }
+        // Операторы отношения
+        // RelationalExpressionNoIn = ShiftExpression | RelationalExpressionNoIn "<" ShiftExpression 
+        //                              | RelationalExpressionNoIn ">" ShiftExpression 
+        //                              | RelationalExpressionNoIn "<=" ShiftExpression 
+        //                              | RelationalExpressionNoIn ">=" ShiftExpression
+        //                              | RelationalExpressionNoIn instanceof ShiftExpression (not implemented)
+        private void parseRelationExpressionNoIn()
+        {
+            if (inFirstOfShiftExpression())   // symbol in first (ShiftExpression)
+            {
+                parseShiftExpression();
+            }
+            else
+            {
+                parseRelationExpressionNoIn();
+                if (checkTokenTag(DomainTag.LESS))
+                {
+                    parseTerminal(DomainTag.LESS);
+                }
+                else if (checkTokenTag(DomainTag.LARGER))
+                {
+                    parseTerminal(DomainTag.LARGER);
+                }
+                else if (checkTokenTag(DomainTag.LESS_OR_EQUAL))
+                {
+                    parseTerminal(DomainTag.LESS_OR_EQUAL);
+                }
+                else// if (checkTokenTag(DomainTag.LARGER_OR_EQUAL))
+                {
+                    parseTerminal(DomainTag.LARGER_OR_EQUAL);
+                }
+            }
+        }
+        // Операторы равенства
+        //  EqualityExpressionNoIn = RelationalExpressionNoIn | EqualityExpressionNoIn "==" RelationalExpressionNoIn
+        //                              | EqualityExpressionNoIn "!=" RelationalExpressionNoIn
+        //                              | EqualityExpressionNoIn "===" RelationalExpressionNoIn (not implemented)
+        //                              | EqualityExpressionNoIn "!==" RelationalExpressionNoIn (not implemented)
+        private void parseEqulityExpressionNoIn()
+        {
+            if (inFirstOfRelationalExpressionNoIn()) // sym in first(relationalExpressionNoIn)
+            {
+                parseRelationExpressionNoIn();
+            }
+            else
+            {
+                parseEqulityExpressionNoIn();
+                if (checkTokenTag(DomainTag.LOGICAL_EQUAL))
+                {
+                    parseTerminal(DomainTag.LOGICAL_EQUAL);
+                }
+                else
+                {
+                    parseTerminal(DomainTag.LOGICAL_NOT_EQUAL);
+                }
+                parseRelationExpressionNoIn();
+            }
+        }
+        // Бинарные побитовые операции
+        // BitwiseANDExpressionNoIn = EqualityExpressionNoIn | BitwiseANDExpressionNoIn "&" EqualityExpressionNoIn
+        private void parseBitwiseANDExpressionNoIn()
+        {
+            if (inFirstOfEqualityExpressionNoIn()) // sym in first EqualiteExpressionNoIN
+            {
+                parseEqulityExpressionNoIn();
+            }
+            else
+            {
+                parseBitwiseANDExpressionNoIn();
+                parseTerminal(DomainTag.LOGICAL_AND);
+                parseEqulityExpressionNoIn();
+            }
+        }
+        // BitwiseXORExpressionNoIn = BitwiseANDExpressionNoIn | BitwiseXORExpressionNoIn "^" BitwiseANDExpressionNoIn
+        private void parseBitwiseXORExpressionNoIn()
+        {
+            if (inFirstOfEqualityExpressionNoIn())
+            {
+                parseBitwiseANDExpressionNoIn();
+            }
+            else
+            {
+                parseBitwiseXORExpressionNoIn();
+                parseTerminal(DomainTag.XOR);
+                parseBitwiseANDExpressionNoIn();
+            }
+        }
+
+        // BitwiseORExpressionNoIn = BitwiseXORExpressionNoIn | BitwiseORExpressionNoIn "|" BitwiseXORExpressionNoIn
+        private void parseBitwiseORExpressionNoIn()
+        {
+            if (inFirstOfBitwiseXORExpressionNoIn()) // sym in first BitwiseXORExpressionNoIn
+            {
+                parseBitwiseXORExpressionNoIn();
+            }
+            else
+            {
+                parseBitwiseORExpressionNoIn();
+                parseTerminal(DomainTag.OR);
+                parseBitwiseXORExpressionNoIn();
+            }
+        }
+        // Бинарные логические операторы
+        // LogicalANDExpressionNoIn = BitwiseORExpressionNoIn | LogicalANDExpressionNoIn "&&" BitwiseORExpressionNoIn 
+        private void parseLogicalANDExpressionNoIn()
+        {
+            if (inFirstOfBitwiseORExpressionNoIn()) // sym in first[bitwiseorexpressionnoin]
+            {
+                parseBitwiseORExpressionNoIn();
+            }
+            else
+            {
+                parseLogicalANDExpressionNoIn();
+                parseTerminal(DomainTag.LOGICAL_AND);
+                parseBitwiseORExpressionNoIn();
+            }
+        }
+        // LogicalORExpressionNoIn = LogicalANDExpressionNoIn | LogicalORExpressionNoIn "||" LogicalANDExpressionNoIn
+        private void parseLogicalORExpressionNoIn()
+        {
+            if (inFirstOfLogicalANDExpressionNoIn()) // sym in first[LogicalANDExpressionNoIn]
+            {
+                parseLogicalANDExpressionNoIn();
+            }
+            else
+            {
+                parseLogicalORExpressionNoIn();
+                parseTerminal(DomainTag.LOGICAL_OR);
+                parseLogicalANDExpressionNoIn();
+            }
+        }
+        // Условные оператор ( ? : )
+        // ConditionalExpressionNoIn = LogicalORExpressionNoIn 
+        //                              | LogicalORExpressionNoIn "?" AssignmentExpression ":" AssignmentExpressionNoIn
+        private void parseConditionalExpressionNoIn()
+        {
+            parseLogicalORExpressionNoIn();
+            if (checkTokenTag(DomainTag.QUESTION))
+            {
+                parseTerminal(DomainTag.QUESTION);
+                parseAssignmentExpressionNoIn();
+                parseTerminal(DomainTag.COLON);
+                parseAssignmentExpressionNoIn();
+               
+            }
+        }
+        // AssignmentExpressionNoIn = ConditionalExpressionNoIn | LeftHandSideExpression AssignmentOperator AssignmentExpressionNoIn
+        private void parseAssignmentExpressionNoIn()
+        {
+            if (inFirstOfConditionalExpressionNoIn()) // first in [condit exprs]
+            {
+                parseConditionalExpressionNoIn();
+            }
+            else
+            {
+                parseLeftHandSideExpression();
+                // not implement +=, -=, /=, %=...
+                parseTerminal(DomainTag.EQUAL);
+                parseAssignmentExpressionNoIn();
+            }
+        }
+        // Оператор запятая
+        // ExpressionNoIn = AssignmentExpressionNoIn | ExpressionNoIn "," AssignmentExpressionNoIn
+        private void parseExpressionNoIn()
+        {
+            if (inFirstOfAssignmentExpressionNoIn()) // sym in first assginmentNoIn
+            {
+                parseAssignmentExpressionNoIn();
+            }
+            else
+            {
+                parseExpressionNoIn();
+                parseTerminal(DomainTag.COMMA);
+                parseAssignmentExpressionNoIn();
+            }
+        }
+
+        
     }
 }

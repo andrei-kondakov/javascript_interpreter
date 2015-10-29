@@ -736,5 +736,43 @@ namespace JavaScriptInterpreter.Types
         public string ReferenceName { get; set; }
         public bool StrictReference { get; set; }
     }
+    //public abstract class EnvironmentRecord
+    //{
+    //    /// <summary>
+    //    /// Определяет, имеет ли запись окружения привязку к индентификатору
+    //    /// </summary>
+    //    /// <param name="name">Текст индентификатора</param>
+    //    /// <returns></returns>
+    //    protected abstract bool hasBinding(string name)
+    //    {
+    //        return false;
+    //    }
+    //    /// <summary>
+    //    /// Создает в записи окружения новую изменяемую привязку.
+    //    /// </summary>
+    //    /// <param name="name">Привязанное имя</param>
+    //    /// <param name="delete">Привязка в последствии может быть удалена</param>
+    //    /// <returns></returns>
+    //    protected abstract bool createMutableBinding(string name, bool delete)
+    //    {
+    //        return false;
+    //    }
+        
+    //}
+    //public class DeclarativeEnviromentRecord : EnvironmentRecord
+    //{
+        
+    //}
+    //public class ObjectEnviromentRecord : EnvironmentRecord
+    //{
+
+    //}
+    //public class LexicalEnvironment : EcmaType
+    //{
+    //    private EnvironmentRecord record;
+    //    private LexicalEnvironment externalLexicalEnvironment; // ссылка! на внешнее лексическое окружение
+    //}
+
+    
 }
     #endregion

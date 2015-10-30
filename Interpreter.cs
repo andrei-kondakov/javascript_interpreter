@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Reflection;
 
 namespace JavaScriptInterpreter
 {
@@ -59,7 +60,9 @@ namespace JavaScriptInterpreter
                 bool fromFile = true;
                 if (fromFile)
                 {
-                    string program = File.ReadAllText(@"D:\Dropbox\dev\js_interpreter\js_interpreter\program.txt");
+
+                    string pathToProgram = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "program.txt");
+                    string program = File.ReadAllText(pathToProgram);
                     //Console.WriteLine("> input:");
                     Console.WriteLine(program);
                     //Console.WriteLine("> end of input");
@@ -76,8 +79,14 @@ namespace JavaScriptInterpreter
                             Console.WriteLine(tkn.ToString());
                         }
                     }
+                    //Node parseTree = new Node("program");
+                    //parseTree.AddChild(new Node(lexems.Dequeue()));
+                    //parseTree.print();
+
                     Parser parser = new Parser(lexems, this);
                     parser.Start();
+                    
+
                 }
                 else
                 {

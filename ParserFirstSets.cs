@@ -11,11 +11,10 @@ namespace JavaScriptInterpreter
         // sym in FIRST[Statement]
         private bool inFirstOfStatement()
         {
-            // TODO: sym in first(ExpressionStatement)
             return checkTokenTag(DomainTag.LBRACE) || checkReservedWord("var") || checkTokenTag(DomainTag.SEMICOLON) ||
                 checkReservedWord("if") || checkReservedWord("for") || checkReservedWord("while") || checkReservedWord("do") ||
                 checkReservedWord("break") || checkReservedWord("continue") || checkReservedWord("return") ||
-                checkReservedWord("switch");
+                checkReservedWord("switch") || inFirstOfExpressionNoIn();
         }
         // sym in FIRST[ExpressionStatement]
         private bool inFirstOfExpressionStatement()

@@ -177,7 +177,7 @@ namespace JavaScriptInterpreter
             while (inFirstOfStatement()) 
             {
                 statement = parseStatement();
-                statement.AddChild(statement);
+                statements.Add(statement);
             }
             return statements;
         }

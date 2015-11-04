@@ -62,6 +62,7 @@ namespace JavaScriptInterpreter
                 {
 
                     string pathToProgram = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "program.txt");
+                    string pathToParseTreeFile = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
                     string program = File.ReadAllText(pathToProgram);
                     //Console.WriteLine("> input:");
                     Console.WriteLine(program);
@@ -73,6 +74,15 @@ namespace JavaScriptInterpreter
                     }
                     if (debug)
                     {
+                        File.WriteAllText(pathToParseTreeFile, string.Empty);
+                        using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
+                        using (StreamWriter sw = new StreamWriter(fs))
+                        {
+                            sw.WriteLine("################################# INPUT #######################################");
+                            sw.WriteLine(program);
+                            //sw.WriteLine("################################## END ########################################");
+                            sw.WriteLine("############################## PARSE TREE #####################################");
+                        }
                         Console.WriteLine("-----Lexer result:");
                         foreach (Token tkn in lexems)
                         {
@@ -85,7 +95,7 @@ namespace JavaScriptInterpreter
 
                     Parser parser = new Parser(lexems, this);
                     parser.Start();
-                    
+
 
                 }
                 else
@@ -113,6 +123,11 @@ namespace JavaScriptInterpreter
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
             }
         }
     }

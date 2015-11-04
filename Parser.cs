@@ -91,7 +91,8 @@ namespace JavaScriptInterpreter
             }
             return elements;
         }
-        // Element = Statement | FunctionDeclaration
+        // Element = Statement
+        //			    | FunctionDeclaration
         private Node parseElement()
         {
             Node element;
@@ -105,11 +106,56 @@ namespace JavaScriptInterpreter
             }
             return element;
         }
+        // Объявление функции
+        // FunctionDeclaration = function Identifier "(" [FormalParameters] ")" "{" FunctionBody "}"
+        private Node parseFunctionDeclaration()
+        {
+            Node functionDeclaration = new Node("Function declaration");
+            functionDeclaration.AddChild(parseReservedWord("function"));
+            functionDeclaration.AddChild(parseToken(DomainTag.IDENT));
+            functionDeclaration.AddChild(parseToken(DomainTag.LPARENT));
+            if (checkTokenTag(DomainTag.IDENT))
+            {
+                functionDeclaration.AddChildren(parseFormalParameters());
+            }
+            functionDeclaration.AddChild(parseToken(DomainTag.RPARENT));
+            functionDeclaration.AddChild(parseToken(DomainTag.LBRACE));
+            functionDeclaration.AddChild(parseFunctionBody());
+            functionDeclaration.AddChild(parseToken(DomainTag.RBRACE));
+            return functionDeclaration;
+        }
+        // FormalParameters = Identifier [ , FormalParameters ]
+        private List<Node> parseFormalParameters()
+        {
+            List<Node> formalParameters = new List<Node>();
+            formalParameters.Add(parseToken(DomainTag.IDENT));
+            while (checkTokenTag(DomainTag.COMMA))
+            {
+                formalParameters.Add(parseToken(DomainTag.COMMA));
+                formalParameters.Add(parseToken(DomainTag.IDENT));
+            }
+            return formalParameters;
+        }
+        // FunctionBody = Elements
+        private Node parseFunctionBody()
+        {
+            Node functionBody = new Node("Function body");
+            functionBody.AddChildren(parseElements());
+            return functionBody;
+        }
         // --------------------------------------Инструкции ---------------------------------------//
         // Statement = Block | VariableStatement | EmptyStatement | ExpressionStatement | IfStatement | IterationStatement | ContinueStatement | BreakStatement | ReturnStatement |
         //                   | WithStatement | LabelledStatement | SwitchStatement | ThrowStatement | TryStatement | DebuggerStatement 
-        // Statement = Block | VariableStatement | EmptyStatement | ExpressionStatement | IfStatement | IterationStatement | BreakStatement | ReturnStatement |
-        //                   | SwitchStatement 
+        // Statement = Block 
+        //				| VariableStatement
+        //				| EmptyStatement
+        //				| ExpressionStatement 
+        //				| IfStatement 
+        //				| IterationStatement 
+        //				| BreakStatement
+        //				| ReturnStatement
+        //              | SwitchStatement 
+        //				| ContinueStatement
         private Node parseStatement()
         {
             Node statement;
@@ -156,25 +202,23 @@ namespace JavaScriptInterpreter
             return statement;
         }
         // Блоки
-        // Block = "{" [Statements] "}"
+        // Block = "{" Statements "}"
         private Node parseBlock()
         {
             Node block = new Node("Block");
             block.AddChild(parseToken(DomainTag.LBRACE));
-            if (inFirstOfStatement())
-            {
-                block.AddChildren(parseStatements());
-            }
+            block.AddChildren(parseStatements());
             block.AddChild(parseToken(DomainTag.RBRACE));
             return block;
         }
         // Statements = Statement | Statements Statement
         // UPDATE: // Statements = Statement { Statement }
+        // UPDATE2:  Statements = { Statement }
         private List<Node> parseStatements()
         {
             List<Node> statements = new List<Node>();
             Node statement;
-            while (inFirstOfStatement()) 
+            while (inFirstOfStatement())
             {
                 statement = parseStatement();
                 statements.Add(statement);
@@ -221,7 +265,7 @@ namespace JavaScriptInterpreter
         {
             Node initialiser = new Node("Initialiser");
             initialiser.AddChild(parseToken(DomainTag.EQUAL));
-            initialiser.AddChild(parseAssignmentExpressionNoIn());
+            initialiser.AddChild(parseAssignmentExpression());
             return initialiser;
         }
 
@@ -241,7 +285,7 @@ namespace JavaScriptInterpreter
             Node expressionStatement = new Node("Expression statement");
             if (!checkTokenTag(DomainTag.LBRACE) && !checkReservedWord("function"))
             {
-                expressionStatement.AddChild(parseExpressionNoIn());
+                expressionStatement.AddChild(parseExpression());
             }
             expressionStatement.AddChild(parseToken(DomainTag.SEMICOLON));
             return expressionStatement;
@@ -254,7 +298,7 @@ namespace JavaScriptInterpreter
             Node ifStatement = new Node("IF statement");
             ifStatement.AddChild(parseReservedWord("if"));
             ifStatement.AddChild(parseToken(DomainTag.LPARENT));
-            ifStatement.AddChild(parseExpressionNoIn());
+            ifStatement.AddChild(parseExpression());
             ifStatement.AddChild(parseToken(DomainTag.RPARENT));
             ifStatement.AddChild(parseStatement());
             if (checkReservedWord("else"))
@@ -276,6 +320,11 @@ namespace JavaScriptInterpreter
         // IterationStatement = do Statement while "(" Expression ")" ";" | while "(" Expression ")" Statement
         //                      | for "(" [Expression] ";" [Expression] ";" [Expression] ")" Statement
         //                      | for "(" var VariableDeclarations ";" [Expression] ";" [Expression] ) Statement 
+        // IterationStatement = do Statement while "(" Expression ")" ";" | while "(" Expression ")" Statement
+        //                      | for "(" ( var VariableDeclarations | [Expression]) ";" [Expression] ";" [Expression] ) Statement 
+        // IterationStatement = do Statement while "(" Expression ")" ";" 
+        //						| while "(" Expression ")" Statement
+        //                      | for "(" ( var VariableDeclarations | [Expression]) ";" [Expression] ";" [Expression] ) Statement 
         private Node parseIterationStatement()
         {
             Node iterationStatement = new Node("Iteration statement");
@@ -284,16 +333,16 @@ namespace JavaScriptInterpreter
                 iterationStatement.AddChild(parseReservedWord("do"));
                 iterationStatement.AddChild(parseStatement());
                 iterationStatement.AddChild(parseReservedWord("while"));
-                iterationStatement.AddChild(parseToken(DomainTag.LBRACE));
-                iterationStatement.AddChild(parseExpressionNoIn());
-                iterationStatement.AddChild(parseToken(DomainTag.RBRACE));
+                iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
+                iterationStatement.AddChild(parseExpression());
+                iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
                 iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
             }
             else if (checkReservedWord("while"))
             {
                 iterationStatement.AddChild(parseReservedWord("while"));
                 iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
-                iterationStatement.AddChild(parseExpressionNoIn());
+                iterationStatement.AddChild(parseExpression());
                 iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
                 iterationStatement.AddChild(parseStatement());
             }
@@ -301,45 +350,38 @@ namespace JavaScriptInterpreter
             {
                 iterationStatement.AddChild(parseReservedWord("for"));
                 iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
-                if (!checkReservedWord("var"))
+                if (checkReservedWord("var"))
                 {
-                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
-                    {
-                        iterationStatement.AddChild(parseExpressionNoIn());
-                    }
-                    iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
-                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
-                    {
-                        iterationStatement.AddChild(parseExpressionNoIn());
-                    }
-                    iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
-                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
-                    {
-                        iterationStatement.AddChild(parseExpressionNoIn());
-                    }
+                    iterationStatement.AddChild(parseReservedWord("var"));
+                    // iterationStatement.AddChild(parseVariableStatement());
+                    iterationStatement.AddChildren(parseVariableDeclarations());
                 }
                 else
                 {
-                    //  | for "(" var VariableDeclarations ";" [Expression] ";" [Expression] ) Statement 
-                    iterationStatement.AddChild(parseVariableStatement());
-                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
+                    if (inFirstOfExpression())  // sym in first(expression)
                     {
-                        iterationStatement.AddChild(parseExpressionNoIn());
+                        iterationStatement.AddChild(parseExpression());
                     }
-                    iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
-                    if (inFirstOfExpressionNoIn())  // sym in first(expression)
-                    {
-                        iterationStatement.AddChild(parseExpressionNoIn());
-                    }
+
+                }
+                iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+                if (inFirstOfExpression())  // sym in first(expression)
+                {
+                    iterationStatement.AddChild(parseExpression());
+                }
+                iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+                if (inFirstOfExpression())  // sym in first(expression)
+                {
+                    iterationStatement.AddChild(parseExpression());
                 }
                 iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
                 iterationStatement.AddChild(parseStatement());
             }
             return iterationStatement;
         }
-
         // Инструкция continue 
         // ContinueStatement = continue ";" | continue ( без перевода строки ) Identifier ; 
+        // ContinueStatement = continue ";"
         private Node parseContinueStatement()
         {
             Node continueStatement = new Node("Continue statement");
@@ -351,6 +393,7 @@ namespace JavaScriptInterpreter
         }
         // Инструкция break
         // BreakStatement = break ";" | break ( без перевода строки ) Identifier ;
+        // BreakStatement = break ";"
         private Node parseBreakStatement()
         {
             Node breakStatement = new Node("Break statement");
@@ -363,12 +406,13 @@ namespace JavaScriptInterpreter
 
         // Инструкция return 
         // ReturnStatement = return ";" | return ( без перевода строки ) Expression;
+        // ReturnStatement = return ";" |
         private Node parseReturnStatement()
         {
             Node returnStatement = new Node("Return statement");
             returnStatement.AddChild(parseReservedWord("return"));
             returnStatement.AddChild(parseToken(DomainTag.SEMICOLON));
-            // TODO/QUESTION
+            // TODO!!!!/QUESTION
             // return ( без перевода строки ) Expression;
             return returnStatement;
         }
@@ -380,12 +424,13 @@ namespace JavaScriptInterpreter
             Node switchStatement = new Node("Switch statement");
             switchStatement.AddChild(parseReservedWord("switch"));
             switchStatement.AddChild(parseToken(DomainTag.LPARENT));
-            switchStatement.AddChild(parseExpressionNoIn());
+            switchStatement.AddChild(parseExpression());
             switchStatement.AddChild(parseToken(DomainTag.RPARENT));
             switchStatement.AddChild(parseCaseBlock());
             return switchStatement;
         }
         // CaseBlock = "{" [CaseClauses] "}" | "{" [CaseClauses] DefaultClause [CaseClauses] "}"
+        // CaseBlock = "{" [CaseClauses] [ DefaultClause [CaseClauses] ] "}" 
         private Node parseCaseBlock()
         {
             Node caseBlock = new Node("Case block");
@@ -407,6 +452,7 @@ namespace JavaScriptInterpreter
         }
         // CaseClauses = CaseClause | CaseClauses CaseClause
         // QUESTION CaseClauses = CaseClause { CaseClause }
+        // CaseClausesOpt = { CaseClause }  // TODO
         private List<Node> parseCaseClauses()
         {
             List<Node> caseClauses = new List<Node>();
@@ -424,6 +470,7 @@ namespace JavaScriptInterpreter
         {
             Node caseClause = new Node("Case clause");
             caseClause.AddChild(parseReservedWord("case"));
+            caseClause.AddChild(parseExpression());
             caseClause.AddChild(parseToken(DomainTag.COLON));
             caseClause.AddChildren(parseStatements());
             return caseClause;
@@ -441,70 +488,39 @@ namespace JavaScriptInterpreter
             return defaultClause;
         }
 
-        // Объявление функции
-        // FunctionDeclaration = function Identifier "(" [FormalParameters] ")" "{" FunctionBody "}"
-        private Node parseFunctionDeclaration()
-        {
-            Node functionDeclaration = new Node("Function declaration");
-            functionDeclaration.AddChild(parseReservedWord("function"));
-            functionDeclaration.AddChild(parseToken(DomainTag.IDENT));
-            functionDeclaration.AddChild(parseToken(DomainTag.LPARENT));
-            if (checkTokenTag(DomainTag.IDENT)) 
-            {
-                functionDeclaration.AddChildren(parseFormalParameters());
-            }
-            functionDeclaration.AddChild(parseToken(DomainTag.RPARENT));
-            functionDeclaration.AddChild(parseToken(DomainTag.LBRACE));
-            functionDeclaration.AddChild(parseFunctionBody());
-            functionDeclaration.AddChild(parseToken(DomainTag.RBRACE));
-            return functionDeclaration;
-        }
 
-        // FunctionExpression = function [Identifier] "(" [FormalParameters] ")" "{" FunctionBody "}"
-        private Node parseFunctionExpression()
-        {
-            Node functionExpression = new Node("Function expression");
-            functionExpression.AddChild(parseReservedWord("function"));
-            if (checkTokenTag(DomainTag.IDENT))
-            {
-                functionExpression.AddChild(parseToken(DomainTag.IDENT));
-            }
-            functionExpression.AddChild(parseToken(DomainTag.LPARENT));
-            if (checkTokenTag(DomainTag.IDENT)) 
-            {
-                functionExpression.AddChildren(parseFormalParameters());
-            }
-            functionExpression.AddChild(parseToken(DomainTag.RPARENT));
-            functionExpression.AddChild(parseToken(DomainTag.LBRACE));
-            functionExpression.AddChild(parseFunctionBody());
-            functionExpression.AddChild(parseToken(DomainTag.RBRACE));
-            return functionExpression;
-        }
+        //// FunctionExpression = function [Identifier] "(" [FormalParameters] ")" "{" FunctionBody "}"
+        //private Node parseFunctionExpression()
+        //{
+        //    Node functionExpression = new Node("Function expression");
+        //    functionExpression.AddChild(parseReservedWord("function"));
+        //    if (checkTokenTag(DomainTag.IDENT))
+        //    {
+        //        functionExpression.AddChild(parseToken(DomainTag.IDENT));
+        //    }
+        //    functionExpression.AddChild(parseToken(DomainTag.LPARENT));
+        //    if (checkTokenTag(DomainTag.IDENT)) 
+        //    {
+        //        functionExpression.AddChildren(parseFormalParameters());
+        //    }
+        //    functionExpression.AddChild(parseToken(DomainTag.RPARENT));
+        //    functionExpression.AddChild(parseToken(DomainTag.LBRACE));
+        //    functionExpression.AddChild(parseFunctionBody());
+        //    functionExpression.AddChild(parseToken(DomainTag.RBRACE));
+        //    return functionExpression;
+        //}
         // FormalParameters = Identifier | FormalParameters , Identifier
         // QUESTION? FormalParameters = Identifier { , Identifier }
-        private List<Node> parseFormalParameters()
-        {
-            List<Node> formalParameters = new List<Node>();
-            formalParameters.Add(parseToken(DomainTag.IDENT));
-            while (checkTokenTag(DomainTag.COMMA))
-            {
-                formalParameters.Add(parseToken(DomainTag.COMMA));
-                formalParameters.Add(parseToken(DomainTag.IDENT));
-            }
-            return formalParameters;
-        }
-        // FunctionBody = Elements
-        private Node parseFunctionBody()
-        {
-            Node functionBody = new Node("Function body");
-            functionBody.AddChildren(parseElements());
-            return functionBody;
-        }
+        
 
         // --------------------------------------Выражения ---------------------------------------//
         // Первичные выражения
         // PrimaryExpression = this | Identifier | Literal | ArrayLiteral | ObjectLiteral | "(" Expression ")"
-        // PrimaryExpression = this | Identifier | Literal | ObjectLiteral | "(" ExpressionNoIn ")"
+        // PrimaryExpression = this 
+        //						| Identifier 
+        //						| Literal
+        //						| ObjectLiteral
+        //						| "(" Expression ")"
         private Node parsePrimaryExpression()
         {
             Node primaryExpression = new Node("Primary expression");
@@ -527,12 +543,15 @@ namespace JavaScriptInterpreter
             else// if (checkTokenTag(DomainTag.LPARENT)){
             {
                 primaryExpression.AddChild(parseToken(DomainTag.LPARENT));
-                primaryExpression.AddChild(parseExpressionNoIn());
+                primaryExpression.AddChild(parseExpression());
                 primaryExpression.AddChild(parseToken(DomainTag.RPARENT));
             }
             return primaryExpression;
         }
-        // Literal = NullLiteral | BooleanLiteral | NumericLiteral | StringLiteral 
+        // Literal = NullLiteral 
+        //				| BooleanLiteral 
+        //				| StringLiteral 
+        //				| Number
         private Node parseLiteral()
         {
             //Node literal = new Node("Literal");
@@ -551,7 +570,7 @@ namespace JavaScriptInterpreter
             }
             else if (checkTokenTag(DomainTag.NUMBER))
             {
-                literal = parseToken(DomainTag.NUMBER);
+               literal = parseToken(DomainTag.NUMBER);
             }
             else
             {
@@ -562,6 +581,7 @@ namespace JavaScriptInterpreter
 
         // Инциализация объекта
         // ObjectLiteral = "{" "}" | "{" PropertyNamesAndValues "}"
+        // ObjectLiteral = "{" [PropertyNamesAndValues] "}"
         private Node parseObjectLiteral()
         {
             Node objectLiteral = new Node("Object literal");
@@ -595,7 +615,7 @@ namespace JavaScriptInterpreter
             {
                 propertyAssignment.AddChild(parsePropertyName());
                 propertyAssignment.AddChild(parseToken(DomainTag.COLON));
-                propertyAssignment.AddChild(parseAssignmentExpressionNoIn());
+                propertyAssignment.AddChild(parseAssignmentExpression());
             }
             else if (checkReservedWord("get"))
             {
@@ -648,143 +668,78 @@ namespace JavaScriptInterpreter
         // Левосторонние выражения
         // MemberExpression = PrimaryExpression | FunctionExpression | MemberExpression "[" Expression "]" 
         //                      | MemberExpression "." Identifier | new MemberExpression Arguments
+        // MemberExpression = ( PrimaryExpression | FunctionExpression | new MemberExpression Arguments ) MemberExpression'
+        // MemberExpression = PrimaryExpression [ ( "." MemberExpression | "[" Expression "]" | "(" [ArgumentList] ")") ]		
         private Node parseMemberExpression()
         {
             Node memberExpression = new Node("Member expression");
-            if (inFirstOfPrimaryExpression())   // Sym in first(PrimaryExpression)
+            memberExpression.AddChild(parsePrimaryExpression());
+            if (checkTokenTag(DomainTag.POINT))
             {
-                memberExpression.AddChild(parsePrimaryExpression());
-            }
-            else if (checkReservedWord("function"))
-            {
-                memberExpression.AddChild(parseFunctionExpression());
-            }
-            else if (inFirstOfMemberExpression()) // Sym in first(MemberExpression) 
-            {
+                memberExpression.AddChild(parseToken(DomainTag.POINT));
                 memberExpression.AddChild(parseMemberExpression());
-                if (checkTokenTag(DomainTag.LSBRACKET))
-                {
-                    memberExpression.AddChild(parseToken(DomainTag.LSBRACKET));
-                    memberExpression.AddChild(parseExpressionNoIn());
-                    memberExpression.AddChild(parseToken(DomainTag.RSBRACKET));
-                }
-                else //if (checkTokenTag(DomainTag.POINT))
-                {
-                    memberExpression.AddChild(parseToken(DomainTag.POINT));
-                    memberExpression.AddChild(parseToken(DomainTag.IDENT));
-                }
-            }
-            else //if (checkReservedWord("new"))
+            }else if (checkTokenTag(DomainTag.LSBRACKET))
             {
-                memberExpression.AddChild(parseMemberExpression());
-                memberExpression.AddChild(parseArguments()); // TODO: addchildrens?
+                memberExpression.AddChild(parseToken(DomainTag.LSBRACKET));
+                memberExpression.AddChild(parseExpression());
+                memberExpression.AddChild(parseToken(DomainTag.RSBRACKET));
+            }
+            else if (checkTokenTag(DomainTag.LPARENT))
+            {
+                memberExpression.AddChild(parseToken(DomainTag.LPARENT));
+                if (inFirstOfAssignmentExpression())
+                {
+                    memberExpression.AddChildren(parseArgumentList());
+                }
+                memberExpression.AddChild(parseToken(DomainTag.RPARENT));
             }
             return memberExpression;
         }
-
-        // NewExpression = MemberExpression | new NewExpression
-        private Node parseNewExpression()
-        {
-            Node newExpression = new Node("New expression");
-            if (inFirstOfMemberExpression()) // sym in first(MemberExpression)
-            {
-                newExpression.AddChild(parseMemberExpression());
-            }
-            else
-            {
-                newExpression.AddChild(parseReservedWord("new"));
-                newExpression.AddChild(parseNewExpression());
-            }
-            return newExpression;
-        }
-        // CallExpression = MemberExpression Arguments | CallExpression Arguments | CallExpression "[" Expression "]" 
-        //                  | CallExpression . Identifier
-
-        private Node parseCallExpression()
-        {
-            Node callExpression = new Node("Call expression");
-            if (inFirstOfMemberExpression()) // sym in first(memberexpression)
-            {
-                callExpression.AddChild(parseMemberExpression());
-                callExpression.AddChild(parseArguments());
-            }
-            else if (inFirstOfCallExpression()) // sym in first(callexpression)
-            {
-                callExpression.AddChild(parseCallExpression());
-                if (checkTokenTag(DomainTag.LPARENT))
-                {
-                    callExpression.AddChild(parseArguments());
-                }
-                else if (checkTokenTag(DomainTag.LBRACE))
-                {
-                    callExpression.AddChild(parseToken(DomainTag.LBRACE));
-                    callExpression.AddChild(parseExpressionNoIn());
-                    callExpression.AddChild(parseToken(DomainTag.RBRACE));
-                }
-                else
-                {
-                    callExpression.AddChild(parseToken(DomainTag.POINT));
-                    callExpression.AddChild(parseToken(DomainTag.IDENT));
-                }
-            }
-            return callExpression;
-        }
-        // Arguments = "(" [ArgumentList] ")"
-        private Node parseArguments()
-        {
-            Node arguments = new Node("Arguments");
-            arguments.AddChild(parseToken(DomainTag.LPARENT));
-            if (checkTokenTag(DomainTag.IDENT))
-            {
-                arguments.AddChildren(parseArgumentList());
-            }
-            arguments.AddChild(parseToken(DomainTag.RPARENT));
-            return arguments;
-        }
-        // ArgumentList = [ArugmentList ","] AssignmentExpression
+        // ArgumentList = AssignmentExpression [ "," ArgumentList ]
         private List<Node> parseArgumentList()
         {
             List<Node> argumentList = new List<Node>();
-            if (inFirstOfAssignmentExpressionNoIn()) // sym in first(assignmentexpression)
+            argumentList.Add(parseAssignmentExpression());
+            if (checkTokenTag(DomainTag.COMMA))
             {
-                argumentList.AddRange(parseArgumentList());
                 argumentList.Add(parseToken(DomainTag.COMMA));
+                argumentList.AddRange(parseArgumentList());
             }
-            argumentList.Add(parseAssignmentExpressionNoIn());
             return argumentList;
         }
-        // LeftHandSideExpression = NewExpression | CallExpression
-        private Node parseLeftHandSideExpression()
+        // ConstructorCallExpression = Identifier [ ( "(" [ArgumentList] ")" | "." ConstructorCallExpression ) ]
+        private List<Node> parseConstructorCallExpression()
         {
-            Node leftHandSideExpression = new Node("Left-hand-side expression");
-            if (inFirstOfNewExpression()) // sym in NewExpression
+            List<Node> constructorCall = new List<Node>();
+            constructorCall.Add(parseToken(DomainTag.IDENT));
+            if (checkTokenTag(DomainTag.LPARENT))
             {
-                leftHandSideExpression.AddChild(parseNewExpression());
+                constructorCall.Add(parseToken(DomainTag.LPARENT));
+                if (inFirstOfArgumentList())
+                {
+                    constructorCall.AddRange(parseArgumentList());
+                }
+                constructorCall.Add(parseToken(DomainTag.RPARENT));
             }
-            else
+            else if (checkTokenTag(DomainTag.POINT))
             {
-                leftHandSideExpression.AddChild(parseCallExpression());
+                constructorCall.Add(parseToken(DomainTag.POINT));
+                constructorCall.AddRange(parseConstructorCallExpression());
             }
-            return leftHandSideExpression;
+            return constructorCall;
         }
-
-        // Потсфиксные выражения
-        // PostfixExpression = LeftHandSideExpression | LeftHandSideExpression "++" | LeftHandSideExpression "--"
-        private Node parsePostfixExpression()
+        // ConstructorExpression = [this "."] ConstructorCallExpression
+        private List<Node> parseConstructorExpression()
         {
-            Node postfixExpression = new Node("Postfix expression");
-            postfixExpression.AddChild(parseLeftHandSideExpression());
-            if (checkTokenTag(DomainTag.INCREMENT))
+            List<Node> constructorExpression = new List<Node>();
+            if (checkReservedWord("this"))
             {
-                postfixExpression.AddChild(parseToken(DomainTag.INCREMENT));
+                constructorExpression.Add(parseReservedWord("this"));
+                constructorExpression.Add(parseToken(DomainTag.COMMA));
             }
-            else if (checkTokenTag(DomainTag.DECREMENT))
-            {
-                postfixExpression.AddChild(parseToken(DomainTag.DECREMENT));
-            }
-            return postfixExpression;
+            constructorExpression.AddRange(parseConstructorCallExpression());
+            return constructorExpression;
         }
-
 
         // Унарные операторы
         // UnaryExpression = PostfixExpression | delete UnaryExpression | void UnaryExpression | typeof UnarryExpression |
@@ -793,64 +748,74 @@ namespace JavaScriptInterpreter
         // UnaryExpression = PostfixExpression | delete UnaryExpression | void UnaryExpression | typeof UnarryExpression |
         //                      | "++" UnaryExpression | "--" UnaryExpression | "+" UnaryExpression | "-" UnaryExpression
 
+        // UnaryExpression = MemberExpression [( "++" | "--" )]
+        //						| ( "+" | "-" ) UnaryExpression
+        //						| ( "++" | "--" ) MemberExpression
+        //						| new ConstructorExpression
+        //						| delete MemberExpression
         private Node parseUnaryExpression()
         {
             Node unaryExpression = new Node("Unary expression");
-            if (inFirstOfPostfixExpression())   // sym in first(postfixexpression)
+            if (inFirstOfMemberExpression())
             {
-                unaryExpression.AddChild(parsePostfixExpression());
+                unaryExpression.AddChild(parseMemberExpression());
+                if (checkTokenTag(DomainTag.INCREMENT))
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.INCREMENT));
+                }
+                else if (checkTokenTag(DomainTag.DECREMENT))
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.DECREMENT));
+                }
             }
-            else if (checkReservedWord("delete"))
+            else if (checkTokenTag(DomainTag.PLUS) || checkTokenTag(DomainTag.MINUS))
             {
-                unaryExpression.AddChild(parseReservedWord("delete"));
+                if (checkTokenTag(DomainTag.PLUS))
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.PLUS));
+                }
+                else
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.MINUS));
+                }
                 unaryExpression.AddChild(parseUnaryExpression());
             }
-            else if (checkReservedWord("void"))
+            else if (checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT))
             {
-                unaryExpression.AddChild(parseReservedWord("void"));
-                unaryExpression.AddChild(parseUnaryExpression());
+                if (checkTokenTag(DomainTag.INCREMENT))
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.INCREMENT));
+                }
+                else
+                {
+                    unaryExpression.AddChild(parseToken(DomainTag.DECREMENT));
+                }
+                unaryExpression.AddChild(parseMemberExpression());
             }
-            else if (checkReservedWord("typeof"))
+            else if (checkReservedWord("new"))
             {
-                unaryExpression.AddChild(parseReservedWord("typeof"));
-                unaryExpression.AddChild(parseUnaryExpression());
-            }
-            else if (checkTokenTag(DomainTag.INCREMENT))
-            {
-                unaryExpression.AddChild(parseToken(DomainTag.INCREMENT));
-                unaryExpression.AddChild(parseUnaryExpression());
-            }
-            else if (checkTokenTag(DomainTag.DECREMENT))
-            {
-                unaryExpression.AddChild(parseToken(DomainTag.DECREMENT));
-                unaryExpression.AddChild(parseUnaryExpression());
-            }
-            else if (checkTokenTag(DomainTag.PLUS))
-            {
-                unaryExpression.AddChild(parseToken(DomainTag.PLUS));
-                unaryExpression.AddChild(parseUnaryExpression());
-            }
-            else if (checkTokenTag(DomainTag.MINUS))
-            {
-                unaryExpression.AddChild(parseToken(DomainTag.MINUS));
-                unaryExpression.AddChild(parseUnaryExpression());
-            }
-            return unaryExpression;
-        }
-
-        // Мультипликативные
-        // MultiplicativeExpression = UnaryExpression | MultiplicativeExpression "*" UnaryExpression |
-        //                              | MultiplicativeExpression "/" UnaryExpression | MultiplicativeExpression "%" UnaryExpression
-        private Node parseMultiplicativeExpression()
-        {
-            Node multiplicativeExpression = new Node("Multiplicative expression");
-            if (inFirstOfUnaryExpression()) // sym in first(unaryExpression)
-            {
-                multiplicativeExpression.AddChild(parseUnaryExpression());
+                unaryExpression.AddChild(parseReservedWord("new"));
+                unaryExpression.AddChildren(parseConstructorExpression());
             }
             else
             {
-                multiplicativeExpression.AddChild(parseMultiplicativeExpression());
+                unaryExpression.AddChild(parseReservedWord("delete"));
+                unaryExpression.AddChild(parseMemberExpression());
+            }
+            return unaryExpression;
+        }
+        // Мультипликативные
+        // MultiplicativeExpression = UnaryExpression | MultiplicativeExpression "*" UnaryExpression |
+        //                              | MultiplicativeExpression "/" UnaryExpression | MultiplicativeExpression "%" UnaryExpression
+
+        // MultiplicativeExpression = UnaryExpression MultiplicativeExpression'
+        // MultiplicativeExpression = UnaryExpression [ ( "*" | "/" | "%" ) MultiplicativeExpression ]
+        private Node parseMultiplicativeExpression()
+        {
+            Node multiplicativeExpression = new Node("Multiplicative expression");
+            multiplicativeExpression.AddChild(parseUnaryExpression());
+            if (checkTokenTag(DomainTag.MUL) || checkTokenTag(DomainTag.DIV) || checkTokenTag(DomainTag.PERCENT))
+            {
                 if (checkTokenTag(DomainTag.MUL))
                 {
                     multiplicativeExpression.AddChild(parseToken(DomainTag.MUL));
@@ -863,23 +828,23 @@ namespace JavaScriptInterpreter
                 {
                     multiplicativeExpression.AddChild(parseToken(DomainTag.PERCENT));
                 }
-                multiplicativeExpression.AddChild(parseUnaryExpression());
+                multiplicativeExpression.AddChild(parseMultiplicativeExpression());
             }
             return multiplicativeExpression;
         }
         // Аддитивные операторы
         // AdditiveExpression = MultiplicativeExpression | AdditiveExpression "+" MultiplicativeExpression |
         //                          | AdditiveExpression "-" MultiplicativeExpression
+
+        // AdditiveExpression = MultiplicativeExpression AdditiveExpression'
+        
+        // AdditiveExpression = MultiplicativeExpression [ ( "+" | "-" ) AdditiveExpression ]
         private Node parseAdditiveExpression()
         {
             Node additiveExpression = new Node("Additive expression");
-            if (inFirstOfMultiplicativeExpression()) // sym in first MultiplicativeExpression
+            additiveExpression.AddChild(parseMultiplicativeExpression());
+            if (checkTokenTag(DomainTag.PLUS) || checkTokenTag(DomainTag.MINUS))
             {
-                additiveExpression.AddChild(parseMultiplicativeExpression());
-            }
-            else
-            {
-                additiveExpression.AddChild(parseAdditiveExpression());
                 if (checkTokenTag(DomainTag.PLUS))
                 {
                     additiveExpression.AddChild(parseToken(DomainTag.PLUS));
@@ -888,23 +853,22 @@ namespace JavaScriptInterpreter
                 {
                     additiveExpression.AddChild(parseToken(DomainTag.MINUS));
                 }
-                additiveExpression.AddChild(parseMultiplicativeExpression());
+                additiveExpression.AddChild(parseAdditiveExpression());
             }
             return additiveExpression;
         }
         // Операторы побитового сдвига
         // ShiftExpression = AdditiveExpression | ShiftExpression "<<" AdditiveExrpession 
         //                      | ShiftExpression ">>" AdditiveExpression
+
+        // ShiftExpression = AdditiveExpression ShiftExpression'
+        // ShiftExpression = AdditiveExpression [ ( "<<" | ">>" ) ShiftExpression ]
         private Node parseShiftExpression()
         {
             Node shiftExpression = new Node("Shift expression");
-            if (inFirstOfAdditiveExpression()) // sym in first(additiveExpression)
+            shiftExpression.AddChild(parseAdditiveExpression());
+            if (checkTokenTag(DomainTag.LSHIFT) || checkTokenTag(DomainTag.RSHIFT))
             {
-                shiftExpression.AddChild(parseAdditiveExpression());
-            }
-            else
-            {
-                shiftExpression.AddChild(parseShiftExpression());
                 if (checkTokenTag(DomainTag.LSHIFT))
                 {
                     shiftExpression.AddChild(parseToken(DomainTag.LSHIFT));
@@ -913,7 +877,7 @@ namespace JavaScriptInterpreter
                 {
                     shiftExpression.AddChild(parseToken(DomainTag.RSHIFT));
                 }
-                shiftExpression.AddChild(parseAdditiveExpression());
+                shiftExpression.AddChild(parseShiftExpression());
             }
             return shiftExpression;
         }
@@ -923,198 +887,171 @@ namespace JavaScriptInterpreter
         //                              | RelationalExpressionNoIn "<=" ShiftExpression 
         //                              | RelationalExpressionNoIn ">=" ShiftExpression
         //                              | RelationalExpressionNoIn instanceof ShiftExpression (not implemented)
-        private Node parseRelationExpressionNoIn()
+        // RelationalExpressionNoIn = ShiftExpression RelationalExpressionNoIn' 
+        // RelationalExpression = ShiftExpression [ ( "<" | ">" | "<=" | ">=" ) RelationalExpression ] 
+        private Node parseRelationExpression()
         {
-            Node relationExpressionNoIn = new Node("Relation expression (no in)");
-            if (inFirstOfShiftExpression())   // symbol in first (ShiftExpression)
+            Node relationExpression = new Node("Relation expression");
+            relationExpression.AddChild(parseShiftExpression());
+            if (checkTokenTag(DomainTag.LESS) || checkTokenTag(DomainTag.LARGER)
+                || checkTokenTag(DomainTag.LESS_OR_EQUAL) || checkTokenTag(DomainTag.LARGER_OR_EQUAL))
             {
-                relationExpressionNoIn.AddChild(parseShiftExpression());
+                if (checkTokenTag(DomainTag.LESS)) relationExpression.AddChild(parseToken(DomainTag.LESS));
+                else if (checkTokenTag(DomainTag.LARGER)) relationExpression.AddChild(parseToken(DomainTag.LARGER));
+                else if (checkTokenTag(DomainTag.LESS_OR_EQUAL)) relationExpression.AddChild(parseToken(DomainTag.LESS_OR_EQUAL));
+                else relationExpression.AddChild(parseToken(DomainTag.LARGER_OR_EQUAL));
+                relationExpression.AddChild(parseRelationExpression());
             }
-            else
-            {
-                relationExpressionNoIn.AddChild(parseRelationExpressionNoIn());
-                if (checkTokenTag(DomainTag.LESS))
-                {
-                    relationExpressionNoIn.AddChild(parseToken(DomainTag.LESS));
-                }
-                else if (checkTokenTag(DomainTag.LARGER))
-                {
-                    relationExpressionNoIn.AddChild(parseToken(DomainTag.LARGER));
-                }
-                else if (checkTokenTag(DomainTag.LESS_OR_EQUAL))
-                {
-                    relationExpressionNoIn.AddChild(parseToken(DomainTag.LESS_OR_EQUAL));
-                }
-                else// if (checkTokenTag(DomainTag.LARGER_OR_EQUAL))
-                {
-                    relationExpressionNoIn.AddChild(parseToken(DomainTag.LARGER_OR_EQUAL));
-                }
-                relationExpressionNoIn.AddChild(parseShiftExpression());
-            }
-            return relationExpressionNoIn;
+            return relationExpression;
         }
         // Операторы равенства
         //  EqualityExpressionNoIn = RelationalExpressionNoIn | EqualityExpressionNoIn "==" RelationalExpressionNoIn
         //                              | EqualityExpressionNoIn "!=" RelationalExpressionNoIn
         //                              | EqualityExpressionNoIn "===" RelationalExpressionNoIn (not implemented)
         //                              | EqualityExpressionNoIn "!==" RelationalExpressionNoIn (not implemented)
-        private Node parseEqulityExpressionNoIn()
+
+        //  EqualityExpressionNoIn = RelationalExpressionNoIn EqualityExpressionNoIn'
+        // EqualityExpression = RelationalExpression [ ( "==" | "!=" ) EqualityExpression ]
+        private Node parseEqulityExpression()
         {
-            Node equlityExpressionNoIn = new Node("Equlity expression (no in)");
-            if (inFirstOfRelationalExpressionNoIn()) // sym in first(relationalExpressionNoIn)
+            Node equlityExpression = new Node("Equlity expression");
+            equlityExpression.AddChild(parseRelationExpression());
+            if (checkTokenTag(DomainTag.LOGICAL_EQUAL) || checkTokenTag(DomainTag.LOGICAL_NOT_EQUAL))
             {
-                equlityExpressionNoIn.AddChild(parseRelationExpressionNoIn());
-            }
-            else
-            {
-                equlityExpressionNoIn.AddChild(parseEqulityExpressionNoIn());
                 if (checkTokenTag(DomainTag.LOGICAL_EQUAL))
                 {
-                    equlityExpressionNoIn.AddChild(parseToken(DomainTag.LOGICAL_EQUAL));
+                    equlityExpression.AddChild(parseToken(DomainTag.LOGICAL_EQUAL));
                 }
                 else
                 {
-                    equlityExpressionNoIn.AddChild(parseToken(DomainTag.LOGICAL_NOT_EQUAL));
+                    equlityExpression.AddChild(parseToken(DomainTag.LOGICAL_NOT_EQUAL));
                 }
-                equlityExpressionNoIn.AddChild(parseRelationExpressionNoIn());
+                equlityExpression.AddChild(parseEqulityExpression());
             }
-            return equlityExpressionNoIn;
+            return equlityExpression;
         }
         // Бинарные побитовые операции
         // BitwiseANDExpressionNoIn = EqualityExpressionNoIn | BitwiseANDExpressionNoIn "&" EqualityExpressionNoIn
-        private Node parseBitwiseANDExpressionNoIn()
+
+        // BitwiseANDExpressionNoIn = EqualityExpressionNoIn BitwiseANDExpressionNoIn'
+        
+        // BitwiseAndExpression = EqualityExpression [ "&" BitwiseAndExpression ]
+        private Node parseBitwiseAndExpression()
         {
-            Node bitwiseANDExpressionNoIn = new Node("Bitwise AND expression (no in)");
-            if (inFirstOfEqualityExpressionNoIn()) // sym in first EqualiteExpressionNoIN
+            Node bitwiseAndExpression = new Node("Bitwise AND expression");
+            bitwiseAndExpression.AddChild(parseEqulityExpression());
+            if (checkTokenTag(DomainTag.AND))
             {
-                bitwiseANDExpressionNoIn.AddChild(parseEqulityExpressionNoIn());
+                bitwiseAndExpression.AddChild(parseToken(DomainTag.AND));
+                bitwiseAndExpression.AddChild(parseBitwiseAndExpression());
             }
-            else
-            {
-                bitwiseANDExpressionNoIn.AddChild(parseBitwiseANDExpressionNoIn());
-                bitwiseANDExpressionNoIn.AddChild(parseToken(DomainTag.LOGICAL_AND));
-                bitwiseANDExpressionNoIn.AddChild(parseEqulityExpressionNoIn());
-            }
-            return bitwiseANDExpressionNoIn;
+            return bitwiseAndExpression;
         }
+
         // BitwiseXORExpressionNoIn = BitwiseANDExpressionNoIn | BitwiseXORExpressionNoIn "^" BitwiseANDExpressionNoIn
-        private Node parseBitwiseXORExpressionNoIn()
+        // BitwiseXORExpressionNoIn = BitwiseANDExpressionNoIn BitwiseXORExpressionNoIn'
+
+        // BitwiseXorExpression = BitwiseAndExpression [ "^" BitwiseXorExpression ]
+        private Node parseBitwiseXorExpression()
         {
-            Node bitwiseXORExpressionNoIn = new Node("Bitwise XOR expressionNoIn");
-            if (inFirstOfEqualityExpressionNoIn())
+            Node bitwiseXorExpression = new Node("Bitwise XOR expression");
+            bitwiseXorExpression.AddChild(parseBitwiseAndExpression());
+            if (checkTokenTag(DomainTag.XOR))
             {
-                bitwiseXORExpressionNoIn.AddChild(parseBitwiseANDExpressionNoIn());
+                bitwiseXorExpression.AddChild(parseToken(DomainTag.XOR));
+                bitwiseXorExpression.AddChild(parseBitwiseXorExpression());
             }
-            else
-            {
-                bitwiseXORExpressionNoIn.AddChild(parseBitwiseXORExpressionNoIn());
-                bitwiseXORExpressionNoIn.AddChild(parseToken(DomainTag.XOR));
-                bitwiseXORExpressionNoIn.AddChild(parseBitwiseANDExpressionNoIn());
-            }
-            return bitwiseXORExpressionNoIn;
+            return bitwiseXorExpression;
         }
-
         // BitwiseORExpressionNoIn = BitwiseXORExpressionNoIn | BitwiseORExpressionNoIn "|" BitwiseXORExpressionNoIn
-        private Node parseBitwiseORExpressionNoIn()
+        // BitwiseORExpressionNoIn = BitwiseXORExpressionNoIn  BitwiseORExpressionNoIn'
+        // BitwiseOrExpression = BitwiseXorExpression [ "|"  BitwiseOrExpression ]
+        private Node parseBitwiseOrExpression()
         {
-            Node bitwiseORExpressionNoIn = new Node("Bitwise OR expression (no in)");
-
-            if (inFirstOfBitwiseXORExpressionNoIn()) // sym in first BitwiseXORExpressionNoIn
+            Node bitwiseOrExpression = new Node("Bitwise OR expression");
+            bitwiseOrExpression.AddChild(parseBitwiseXorExpression());
+            if (checkTokenTag(DomainTag.OR))
             {
-                bitwiseORExpressionNoIn.AddChild(parseBitwiseXORExpressionNoIn());
+                bitwiseOrExpression.AddChild(parseToken(DomainTag.OR));
+                bitwiseOrExpression.AddChild(parseBitwiseOrExpression());
             }
-            else
-            {
-                bitwiseORExpressionNoIn.AddChild(parseBitwiseORExpressionNoIn());
-                bitwiseORExpressionNoIn.AddChild(parseToken(DomainTag.OR));
-                bitwiseORExpressionNoIn.AddChild(parseBitwiseXORExpressionNoIn());
-            }
-            return bitwiseORExpressionNoIn;
+            return bitwiseOrExpression;
         }
         // Бинарные логические операторы
         // LogicalANDExpressionNoIn = BitwiseORExpressionNoIn | LogicalANDExpressionNoIn "&&" BitwiseORExpressionNoIn 
-        private Node parseLogicalANDExpressionNoIn()
+        // LogicalANDExpressionNoIn = BitwiseORExpressionNoIn LogicalANDExpressionNoIn'
+        // LogicalAndExpression = BitwiseOrExpression [ "&&" LogicalAndExpression ]
+        private Node parseLogicalAndExpression()
         {
-            Node logicalANDExpressionNoIn = new Node("Logical AND expression (no in)");
-            if (inFirstOfBitwiseORExpressionNoIn()) // sym in first[bitwiseorexpressionnoin]
+            Node logicalAndExpression = new Node("Logical AND expression");
+            logicalAndExpression.AddChild(parseBitwiseOrExpression());
+            if (checkTokenTag(DomainTag.LOGICAL_AND))
             {
-                logicalANDExpressionNoIn.AddChild(parseBitwiseORExpressionNoIn());
+                logicalAndExpression.AddChild(parseToken(DomainTag.LOGICAL_AND));
+                logicalAndExpression.AddChild(parseLogicalAndExpression());
             }
-            else
-            {
-                logicalANDExpressionNoIn.AddChild(parseLogicalANDExpressionNoIn());
-                logicalANDExpressionNoIn.AddChild(parseToken(DomainTag.LOGICAL_AND));
-                logicalANDExpressionNoIn.AddChild(parseBitwiseORExpressionNoIn());
-            }
-            return logicalANDExpressionNoIn;
+            return logicalAndExpression;
         }
         // LogicalORExpressionNoIn = LogicalANDExpressionNoIn | LogicalORExpressionNoIn "||" LogicalANDExpressionNoIn
-        private Node parseLogicalORExpressionNoIn()
+        // LogicalORExpressionNoIn = LogicalANDExpressionNoIn LogicalORExpressionNoIn'
+        // LogicalOrExpression = LogicalAndExpression [ "||" LogicalOrExpression ]
+        private Node parseLogicalOrExpression()
         {
-            Node logicalORExpressionNoIn = new Node("Logical OR expression (no in)");
-            if (inFirstOfLogicalANDExpressionNoIn()) // sym in first[LogicalANDExpressionNoIn]
+            Node logicalOrExpression = new Node("Logical OR expression");
+            logicalOrExpression.AddChild(parseLogicalAndExpression());
+            if (checkTokenTag(DomainTag.LOGICAL_OR))
             {
-                logicalORExpressionNoIn.AddChild(parseLogicalANDExpressionNoIn());
+                logicalOrExpression.AddChild(parseToken(DomainTag.OR));
+                logicalOrExpression.AddChild(parseLogicalOrExpression());
             }
-            else
-            {
-                logicalORExpressionNoIn.AddChild(parseLogicalORExpressionNoIn());
-                logicalORExpressionNoIn.AddChild(parseToken(DomainTag.LOGICAL_OR));
-                logicalORExpressionNoIn.AddChild(parseLogicalANDExpressionNoIn());
-            }
-            return logicalORExpressionNoIn;
+            return logicalOrExpression;
         }
         // Условные оператор ( ? : )
         // ConditionalExpressionNoIn = LogicalORExpressionNoIn 
         //                              | LogicalORExpressionNoIn "?" AssignmentExpression ":" AssignmentExpressionNoIn
-        private Node parseConditionalExpressionNoIn()
+        // ConditionalExpressionNoIn = LogicalORExpressionNoIn [ "?" AssignmentExpression ":" AssignmentExpressionNoIn ]
+        // ConditionalExpression = LogicalOrExpression [ "?" AssignmentExpression ":" AssignmentExpression ]
+        private Node parseConditionalExpression()
         {
-            Node conditionalExpressionNoIn = new Node("Conditional expression (no in)");
-            conditionalExpressionNoIn.AddChild(parseLogicalORExpressionNoIn());
+            Node conditionalExpression = new Node("Conditional expression");
+            conditionalExpression.AddChild(parseLogicalOrExpression());
             if (checkTokenTag(DomainTag.QUESTION))
             {
-                conditionalExpressionNoIn.AddChild(parseToken(DomainTag.QUESTION));
-                conditionalExpressionNoIn.AddChild(parseAssignmentExpressionNoIn());
-                conditionalExpressionNoIn.AddChild(parseToken(DomainTag.COLON));
-                conditionalExpressionNoIn.AddChild(parseAssignmentExpressionNoIn());
+                conditionalExpression.AddChild(parseToken(DomainTag.QUESTION));
+                conditionalExpression.AddChild(parseAssignmentExpression());
+                conditionalExpression.AddChild(parseToken(DomainTag.COLON));
+                conditionalExpression.AddChild(parseAssignmentExpression());
             }
-            return conditionalExpressionNoIn;
+            return conditionalExpression;
         }
+        // TODO
         // AssignmentExpressionNoIn = ConditionalExpressionNoIn | LeftHandSideExpression AssignmentOperator AssignmentExpressionNoIn
-        private Node parseAssignmentExpressionNoIn()
+        // AssignmentExpression = ConditionalExpression [ "=" AssignmentExpression ] 
+        private Node parseAssignmentExpression()
         {
-            Node assignmentExpressionNoIn = new Node("Assignment expression (no in)");
-            if (inFirstOfConditionalExpressionNoIn()) // first in [condit exprs]
+            Node assignmentExpression = new Node("Assignment expression");
+            assignmentExpression.AddChild(parseConditionalExpression());
+            if (checkTokenTag(DomainTag.EQUAL))
             {
-                assignmentExpressionNoIn.AddChild(parseConditionalExpressionNoIn());
+                assignmentExpression.AddChild(parseToken(DomainTag.EQUAL));
+                assignmentExpression.AddChild(parseAssignmentExpression());
             }
-            else
-            {
-                assignmentExpressionNoIn.AddChild(parseLeftHandSideExpression());
-                // not implement +=, -=, /=, %=...
-                assignmentExpressionNoIn.AddChild(parseToken(DomainTag.EQUAL));
-                assignmentExpressionNoIn.AddChild(parseAssignmentExpressionNoIn());
-            }
-            return assignmentExpressionNoIn;
+            return assignmentExpression;
         }
         // Оператор запятая
         // ExpressionNoIn = AssignmentExpressionNoIn | ExpressionNoIn "," AssignmentExpressionNoIn
-        private Node parseExpressionNoIn()
+        // ExpressionNoIn = AssignmentExpressionNoIn ExpressionNoIn'
+        // Expression = AssignmentExpression [ "," Expression ]
+        private Node parseExpression()
         {
-            Node expressionNoIn = new Node("Expression (no in)");
-            if (inFirstOfAssignmentExpressionNoIn()) // sym in first assginmentNoIn
+            Node expression = new Node("Expression");
+            expression.AddChild(parseAssignmentExpression());
+            if (checkTokenTag(DomainTag.COMMA))
             {
-                expressionNoIn.AddChild(parseAssignmentExpressionNoIn());
+                expression.AddChild(parseToken(DomainTag.COMMA));
+                expression.AddChild(parseExpression());
             }
-            else
-            {
-                expressionNoIn.AddChild(parseExpressionNoIn());
-                expressionNoIn.AddChild(parseToken(DomainTag.COMMA));
-                expressionNoIn.AddChild(parseAssignmentExpressionNoIn());
-            }
-            return expressionNoIn;
+            return expression;
         }
-
-        
     }
 }

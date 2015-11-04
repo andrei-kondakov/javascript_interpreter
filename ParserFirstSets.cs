@@ -14,18 +14,19 @@ namespace JavaScriptInterpreter
             return checkTokenTag(DomainTag.LBRACE) || checkReservedWord("var") || checkTokenTag(DomainTag.SEMICOLON) ||
                 checkReservedWord("if") || checkReservedWord("for") || checkReservedWord("while") || checkReservedWord("do") ||
                 checkReservedWord("break") || checkReservedWord("continue") || checkReservedWord("return") ||
-                checkReservedWord("switch") || inFirstOfExpressionNoIn();
+                checkReservedWord("switch") || inFirstOfExpressionStatement();
         }
         // sym in FIRST[ExpressionStatement]
         private bool inFirstOfExpressionStatement()
         {
-            return inFirstOfExpressionNoIn();
+            // TEST
+            return inFirstOfExpression() &&  !(checkTokenTag(DomainTag.LBRACE) || checkReservedWord("function"));
         }
         // sym in FIRST[Literal]
         private bool inFirstOfLiteral()
         {
             return checkReservedWord("null") || checkReservedWord("true") || checkReservedWord("false") ||
-                checkTokenTag(DomainTag.NUMBER) || checkTokenTag(DomainTag.STRING);
+                checkTokenTag(DomainTag.STRING) || checkTokenTag(DomainTag.NUMBER);
         }
         // sym in FIRST[ObjectLiteral]
         private bool inFirstOfObjectLiteral()
@@ -59,39 +60,24 @@ namespace JavaScriptInterpreter
         // sym in FIRST[MemberExpression]
         private bool inFirstOfMemberExpression()
         {
-            return inFirstOfPrimaryExpression() || checkReservedWord("function") || checkReservedWord("new"); // TEST!
+            return inFirstOfPrimaryExpression();
         }
-        // sym in FIRST[CallExpression]
-        private bool inFirstOfCallExpression()
+        // sym in First[ArgumentList] 
+        private bool inFirstOfArgumentList()
         {
-            return inFirstOfMemberExpression(); // QUESTION!!
-        }
-        // sym in FIRST[NewExpression]
-        private bool inFirstOfNewExpression()
-        {
-            return inFirstOfMemberExpression() || checkReservedWord("new");
-        }
-        // sym in FIRST[LeftHandSideExpression]
-        private bool inFirstOfLeftHandSideExpression()
-        {
-            return inFirstOfNewExpression() || inFirstOfCallExpression();
-        }
-        // sym in FIRST[PostfixExpression]
-        private bool inFirstOfPostfixExpression()
-        {
-            return inFirstOfLeftHandSideExpression();
+            return inFirstOfAssignmentExpression();
         }
         // sym in FIRST[UnaryExpression] 
         private bool inFirstOfUnaryExpression()
         {
-            return inFirstOfPostfixExpression() || checkReservedWord("delete") || checkReservedWord("void") || checkReservedWord("typeof")
-                || checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT) || checkTokenTag(DomainTag.PLUS)
-                || checkTokenTag(DomainTag.MINUS);
+            return inFirstOfMemberExpression() || checkTokenTag(DomainTag.PLUS)
+                || checkTokenTag(DomainTag.MINUS) || checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT)
+                || checkReservedWord("new") || checkReservedWord("delete");
         }
         // sym in FIRST[MultiplicativeExpression] 
         private bool inFirstOfMultiplicativeExpression()
         {
-            return inFirstOfUnaryExpression(); // TEST
+            return inFirstOfUnaryExpression();
         }
         // sym in FIRST[AdditiveExpression] 
         private bool inFirstOfAdditiveExpression()
@@ -104,54 +90,54 @@ namespace JavaScriptInterpreter
             return inFirstOfAdditiveExpression();
         }
         // sym in FIRST[RelationalExpressionNoIn] 
-        private bool inFirstOfRelationalExpressionNoIn()
+        private bool inFirstOfRelationalExpression()
         {
             return inFirstOfShiftExpression();
         }
         // sym in FIRST[EqualityExpressionNoIn] 
-        private bool inFirstOfEqualityExpressionNoIn()
+        private bool inFirstOfEqualityExpression()
         {
-            return inFirstOfRelationalExpressionNoIn();
+            return inFirstOfRelationalExpression();
         }
-        // sym in FIRST[BitwiseANDExpressionNoIn] 
-        private bool inFirstOfBitwiseANDExpressionNoIn()
+        // sym in FIRST[BitwiseAndExpression] 
+        private bool inFirstOfBitwiseAndExpression()
         {
-            return inFirstOfEqualityExpressionNoIn();
+            return inFirstOfEqualityExpression();
         }
-        // sym in FIRST[BitwiseXORExpressionNoIn] 
-        private bool inFirstOfBitwiseXORExpressionNoIn()
+        // sym in FIRST[BitwiseXorExpressionNoIn] 
+        private bool inFirstOfBitwiseXorExpression()
         {
-            return inFirstOfBitwiseANDExpressionNoIn();
+            return inFirstOfBitwiseAndExpression();
         }
-        // sym in FIRST[BitwiseXORExpressionNoIn] 
-        private bool inFirstOfBitwiseORExpressionNoIn()
+        // sym in FIRST[BitwiseXorExpression] 
+        private bool inFirstOfBitwiseOrExpression()
         {
-            return inFirstOfBitwiseXORExpressionNoIn();
+            return inFirstOfBitwiseXorExpression();
         }
-        // sym in FIRST[LogicalANDExpressionNoIn]
-        private bool inFirstOfLogicalANDExpressionNoIn()
+        // sym in FIRST[LogicalAndExpression]
+        private bool inFirstOfLogicalAndExpression()
         {
-            return inFirstOfBitwiseORExpressionNoIn();
+            return inFirstOfBitwiseOrExpression();
         }
-        // sym in FIRST[LogicalORExpressionNoIn]
-        private bool inFirstOfLogicalORExpressionNoIn()
+        // sym in FIRST[LogicalOrExpression]
+        private bool inFirstOfLogicalOrExpression()
         {
-            return inFirstOfLogicalANDExpressionNoIn();
+            return inFirstOfLogicalAndExpression();
         }
-        // sym in FIRST[ConditionalExpressionNoIn]
-        private bool inFirstOfConditionalExpressionNoIn()
+        // sym in FIRST[ConditionalExpression]
+        private bool inFirstOfConditionalExpression()
         {
-            return inFirstOfLogicalORExpressionNoIn();
+            return inFirstOfLogicalOrExpression();
         }
-        // sym in FIRST[AssignmentExpressionNoIn]
-        private bool inFirstOfAssignmentExpressionNoIn()
+        // sym in FIRST[AssignmentExpression]
+        private bool inFirstOfAssignmentExpression()
         {
-            return inFirstOfConditionalExpressionNoIn() || inFirstOfLeftHandSideExpression();
+            return inFirstOfConditionalExpression();
         }
-        // sym in FIRST[ExpressionNoIn]
-        private bool inFirstOfExpressionNoIn()
+        // sym in FIRST[Expression]
+        private bool inFirstOfExpression()
         {
-            return inFirstOfAssignmentExpressionNoIn();
+            return inFirstOfAssignmentExpression();
         }
     }
 }

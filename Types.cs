@@ -7,71 +7,21 @@ using System.Collections;
 
 namespace JavaScriptInterpreter.Types
 {
-    public abstract class EcmaType
-    { }
-
     #region Language_types
-    public class UndefinedType : EcmaType
+    enum EcmaTypes
     {
-        private static UndefinedType value;
-        private UndefinedType()
-        { }
-        public static UndefinedType Value
-        {
-            get
-            {
-                if (value == null)
-                {
-                    return new UndefinedType();
-                }
-                return value;
-            }
-        }
+        UNDEFINED,
+        NULL,
+        TRUE,
+        FALSE
     }
-    public class NullType : EcmaType
+    enum DescriptorType
     {
-        private static NullType value; // singleton
-        private NullType()
-        { }
-        public static NullType Value
-        {
-            get
-            {
-                if (value == null)
-                {
-                    value = new NullType();
-                }
-                return value;
-            }
-        }
+        DATA,
+        ACCESSOR,
+        UNKNOWN
     }
-    public class BooleanType : EcmaType
-    {
-        private bool value;
-        public BooleanType(bool value)
-        {
-            this.value = value;
-        }
-        public bool Value
-        {
-            get { return value; }
-            set { this.value = value; }
-        }
-    }
-    public class StringType : EcmaType
-    {
-        private string value;
-        public StringType(string value)
-        {
-            this.value = value;
-        }
-        public string Value
-        {
-            get { return value; }
-            set { this.value = value; }
-        }
-    }
-    public class NumberType : EcmaType
+    public class NumberType
     {
         private double value;
         //private bool posInfinity;
@@ -100,12 +50,11 @@ namespace JavaScriptInterpreter.Types
             { this.value = value; }
         }
     }
-    public class ObjectType : EcmaType
+    public class ObjectType
     {
         // QUESTION m.b. Dicitipnary<string, PropertyDescriptroType> ??!??
-        private Dictionary<string, DataDescriptor> namedDataProperties;   // ассоциирует имя со значением и набором булевых атрибутов
-        private Dictionary<string, AcessorDescriptor> namedAccessorProperties; // ассоциирует имя с одной или двумя функциями доступа и с набором булевых атрибутов
-        
+        private Dictionary<string, PropertyDescriptorType> namedProperties;   // ассоциирует имя со значением и набором булевых атрибутов
+        private Dictionary<string, object> internalProperties;      // внутренние свойства
         /*  Внутренние свойства каждого объекта */
         /*private EcmaType prototype;     // Прототип данного объекта [Object/NULL]
         private string __class__;          // Классифицаия объектов
@@ -114,8 +63,8 @@ namespace JavaScriptInterpreter.Types
 
         public ObjectType()
         {
-            namedDataProperties = new Dictionary<string, DataDescriptor>();
-            namedAccessorProperties = new Dictionary<string, AcessorDescriptor>();
+            namedProperties = new Dictionary<string, PropertyDescriptorType>();
+            internalProperties = new Dictionary<string, object>();
         }
 
         /* Внутренние методы каждого объекта */
@@ -125,28 +74,27 @@ namespace JavaScriptInterpreter.Types
         /// или undefined (в случае отсутствия)
         /// </summary>
         /// <param name="propertyName">Название свойства</param>
-        /// <returns></returns>
-        private EcmaType getOwnProperty(string propertyName) // возвращает дескриптор свойства
+        /// <returns>UNDEFINED/PROPERTY_DESCRIPTOR</returns>
+        private object getOwnProperty(string propertyName) // возвращает дескриптор свойства
         {
-            if (!namedDataProperties.ContainsKey(propertyName) || !namedAccessorProperties.ContainsKey(propertyName))
-                return UndefinedType.Value;
+            if (!namedProperties.ContainsKey(propertyName))
+                return EcmaTypes.UNDEFINED;
             PropertyDescriptorType property, result;
-            if (namedAccessorProperties.ContainsKey(propertyName))
+            property = namedProperties[propertyName];
+            if (EcmaScript.IsDataDescriptor(property))
             {
-                property = namedDataProperties[propertyName];
-                result = new DataDescriptor();
-                ((DataDescriptor)result).Value=((DataDescriptor)property).Value;
-                ((DataDescriptor)result).Writable = ((DataDescriptor)property).Writable;
+                result = new PropertyDescriptorType(DescriptorType.DATA);
+                result.Attributes["value"] = property.Attributes["value"];
+                result.Attributes["writable"] = property.Attributes["writable"];
             }
             else
             {
-                property = namedAccessorProperties[propertyName];
-                result = new AcessorDescriptor();
-                ((AcessorDescriptor)result).Get = ((AcessorDescriptor)property).Get;
-                ((AcessorDescriptor)result).Set = ((AcessorDescriptor)property).Set;
+                result = new PropertyDescriptorType(DescriptorType.ACCESSOR);
+                result.Attributes["get"] = property.Attributes["get"];
+                result.Attributes["set"] = property.Attributes["set"];
             }
-            result.Enumerable = property.Enumerable;
-            result.Configurable = property.Configurable;
+            result.Attributes["enumerable"] = property.Attributes["enumerable"];
+            result.Attributes["configurable"] = property.Attributes["configurable"];
             return result;
         }
         /// <summary>
@@ -154,19 +102,23 @@ namespace JavaScriptInterpreter.Types
         /// или undefined (в случае отсутствия)
         /// </summary>
         /// <param name="propertyName">Название свойства</param>
-        /// <returns></returns>
-        public EcmaType GetProperty(string propertyName) 
+        /// <returns>Undefined/PropertyDescriptorType</returns>
+        public object GetProperty(string propertyName) 
         {
-            EcmaType prop = getOwnProperty(propertyName);
-            if (!(prop is UndefinedType))
+            var property = getOwnProperty(propertyName);
+            if (!(property.Equals(EcmaTypes.UNDEFINED)))
             {
-                return prop;
+                return property;
             }
             else
             {
-                EcmaType proto = this.get("__proto__");
-                if (proto is NullType) return UndefinedType.Value;
-                return ((ObjectType)proto).GetProperty(propertyName);
+                var prototype = internalProperties["prototype"];
+                if (prototype.Equals(EcmaTypes.UNDEFINED))
+                {
+                    return EcmaTypes.UNDEFINED; 
+                }
+                // QUESTION?
+                return ((ObjectType)prototype).GetProperty(propertyName);
             }
         }
 
@@ -176,18 +128,18 @@ namespace JavaScriptInterpreter.Types
         /// </summary>
         /// <param name="propertyName">Имя свойства</param>
         /// <returns></returns>
-        private EcmaType get(string propertyName)   
+        private object get(string propertyName)   
         {
-            EcmaType desc = this.GetProperty(propertyName);
-            if (desc is UndefinedType) return UndefinedType.Value;
-            if (desc is DataDescriptor)
+            var desc = GetProperty(propertyName);
+            if (desc.Equals(EcmaTypes.UNDEFINED)) return EcmaTypes.UNDEFINED;
+            if (EcmaScript.IsDataDescriptor(desc))
             {
-                return (EcmaType)((DataDescriptor)desc).Value;
+                return ((PropertyDescriptorType)desc).Attributes["value"];
             }
-            else//if (desc is AcessorDescriptor)
+            else //if (EcmaScript.IsAcessorDescriptor(desc))
             {
-                EcmaType getter = (EcmaType)((AcessorDescriptor)desc).Get;
-                if (getter is UndefinedType) return UndefinedType.Value;
+                var getter = ((PropertyDescriptorType)desc).Attributes["get"];
+                if (getter.Equals(EcmaTypes.UNDEFINED)) return EcmaTypes.UNDEFINED;
                 return null; // TODO: вызвать внутренний метод CALL для getter передавая О в качестве значения this и непередавая никаких аргументов
             }
         }
@@ -200,34 +152,57 @@ namespace JavaScriptInterpreter.Types
         /// <returns>true/false</returns>
         private bool canPut(string propertyName)
         {
-            EcmaType desc = getOwnProperty(propertyName);
-            if (!(desc is UndefinedType))
+            var desc = getOwnProperty(propertyName);
+            if (!desc.Equals(EcmaTypes.UNDEFINED))
             {
-                if (desc is AcessorDescriptor)
+                if (EcmaScript.IsAcessorDescriptor(desc))
                 {
-                    if (((AcessorDescriptor)desc).Set is UndefinedType) return false;
-                    else return true;
+                    if (((PropertyDescriptorType)desc).Attributes["set"].Equals(EcmaTypes.UNDEFINED))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
                 }
                 else
                 {
-                    return (bool)((DataDescriptor)desc).Writable;
+                    return (bool)((PropertyDescriptorType)desc).Attributes["writable"];
                 }
             }
-            EcmaType proto = this.get("__proto__");
-            if (proto is NullType) return ((BooleanType)this.get("__extensible__")).Value;
-            EcmaType inherited = ((ObjectType)proto).GetProperty(propertyName);
-            if (inherited is UndefinedType) return ((BooleanType)this.get("__extensible__")).Value;
-            if (inherited is AcessorDescriptor)
+            var prototype = internalProperties["prototype"];
+            if (prototype.Equals(EcmaTypes.NULL))
             {
-                if (((AcessorDescriptor)inherited).Set is UndefinedType) return false;
-                else return true;
+                return (bool)internalProperties["extensible"];
+            }
+            var inherited = ((ObjectType)prototype).GetProperty(propertyName);
+            if (inherited.Equals(EcmaTypes.UNDEFINED))
+            {
+                return (bool)internalProperties["extensible"];
+            }
+            if (EcmaScript.IsAcessorDescriptor(inherited))
+            {
+                if (((PropertyDescriptorType)inherited).Attributes["set"].Equals(EcmaTypes.UNDEFINED))
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
             else
             {
-                if (((BooleanType)this.get("__extensible__")).Value == false) return false;
-                else return (bool)((DataDescriptor)inherited).Writable;
+                if ((bool)internalProperties["extensible"] == false)
+                {
+                    return false;
+                }
+                else
+                {
+                    return (bool)((PropertyDescriptorType)inherited).Attributes["writable"];
+                }
             }
-            
         }
 
         /// <summary>
@@ -238,7 +213,7 @@ namespace JavaScriptInterpreter.Types
         /// <param name="needThrow">Обработка отказов</param>
         /// <returns>Результат</returns>
 
-        public bool Put(string propertyName, EcmaType value, bool needThrow)
+        public bool Put(string propertyName, object value, bool needThrow)
         {
             bool possibleToPut = canPut(propertyName);
             if (!possibleToPut)
@@ -252,16 +227,31 @@ namespace JavaScriptInterpreter.Types
                     return possibleToPut;
                 }
             }
-            EcmaType ownDesc = getOwnProperty(propertyName);
-            bool res = false;
-            if (ownDesc is DataDescriptor)
+            var ownDesc = getOwnProperty(propertyName);
+            if (EcmaScript.IsDataDescriptor(ownDesc))
             {
-                DataDescriptor valueDesc = new DataDescriptor();
-                res = DefineOwnProperty(propertyName, valueDesc, needThrow);
+                PropertyDescriptorType valueDesc = new PropertyDescriptorType(DescriptorType.DATA);
+                valueDesc.Attributes["value"] = value;
+                return DefineOwnProperty(propertyName, valueDesc, needThrow);
             }
-            return res;
+            var desc = GetProperty(propertyName);
+            if (EcmaScript.IsAcessorDescriptor(desc))
+            {
+                var setter = ((PropertyDescriptorType)desc).Attributes["set"];
+                // QUESTION: почему setter не может быть undefined?
+                // TODO 8.12.5 5 пункт
+                return false; // NOT IMPLEMENTED!!
+            }
+            else
+            {
+                PropertyDescriptorType newDesc = new PropertyDescriptorType(DescriptorType.DATA);
+                newDesc.Attributes["value"] = value;
+                newDesc.Attributes["writable"] = true;
+                newDesc.Attributes["enumerable"] = true;
+                newDesc.Attributes["configurable"] = true;
+                return DefineOwnProperty(propertyName, newDesc, needThrow);
+            }
         }
-        
 
         /// <summary>
         /// Есть ли у данного объекта свойство с таким именем
@@ -270,11 +260,10 @@ namespace JavaScriptInterpreter.Types
         /// <returns></returns>
         private bool hasProperty(string propertyName)
         {
-            EcmaType desc = GetProperty(propertyName);
-            if (desc is UndefinedType) return false;
+            var desc = GetProperty(propertyName);
+            if (desc.Equals(EcmaTypes.UNDEFINED)) return false;
             return true;
         }
-        
        
         /// <summary>
         /// Удаляет из объекта указанное именнованное свойство
@@ -284,12 +273,11 @@ namespace JavaScriptInterpreter.Types
         /// <returns></returns>
         private bool delete(string propertyName, bool needThrow)
         {
-            EcmaType desc = GetProperty(propertyName);
-            if (desc is UndefinedType) return true;
-            if ((bool)((PropertyDescriptorType)desc).Configurable)
+            var desc = getOwnProperty(propertyName);
+            if (desc.Equals(EcmaTypes.UNDEFINED)) return true;
+            if ((bool)((PropertyDescriptorType)desc).Attributes["configurable"])
             {
-                if (desc is DataDescriptor) namedDataProperties.Remove(propertyName);
-                else namedAccessorProperties.Remove(propertyName);
+                namedProperties.Remove(propertyName);
                 return true;
             }
             else
@@ -303,19 +291,14 @@ namespace JavaScriptInterpreter.Types
         /// </summary>
         /// <param name="hint">Подсказка</param>
         /// <returns>Значение по умолчанию для данного объекта</returns>
-        public EcmaType DefaultValue(string hint)
+        public object DefaultValue(string hint)
         {
             // TODO результат вызова 8.12.8
             return null;
         }
         
 
-        private bool isGenericDescriptor(EcmaType desc)
-        {
-            if (desc is UndefinedType) return false;
-            if (!(desc is AcessorDescriptor) && !(desc is DataDescriptor)) return true;
-            return false;
-        }
+        
         // TODO: 8.12.9
         // defineOwnProperty - алгоритм содержит шаги, проверяющие различны поля Desc Property Descriptor 
         // на наличие определенных значений. Проверяемые таким образом поля не обязательно должны существовать в Desc.
@@ -330,133 +313,108 @@ namespace JavaScriptInterpreter.Types
         /// <returns></returns>
         public bool DefineOwnProperty(string propertyName, PropertyDescriptorType descriptor, bool needThrow)
         {
-            EcmaType current = getOwnProperty(propertyName);
-            if (current is UndefinedType && ((BooleanType)this.get("__extensible__")).Value == false)
+            var current = getOwnProperty(propertyName);
+            if (current.Equals(EcmaTypes.UNDEFINED) && (bool)internalProperties["extensible"] == false)
             {
                 if (needThrow) throw new Exception("TypeError");
                 return false;
             }
-            if (current is UndefinedType && ((BooleanType)this.get("__extensible__")).Value)
+            if (current.Equals(EcmaTypes.UNDEFINED) && (bool)internalProperties["extensible"])
             {
-                if (isGenericDescriptor(descriptor) || descriptor is DataDescriptor)
+                PropertyDescriptorType newDescriptor;
+                var enumerable = descriptor.Attributes["enumerable"];
+                var configurable = descriptor.Attributes["configurable"];
+                if (EcmaScript.IsGenericDescriptor(descriptor) || EcmaScript.IsDataDescriptor(descriptor))
                 {
-                    DataDescriptor dataDescriptor = new DataDescriptor();
-                    dataDescriptor.Value = ((DataDescriptor)descriptor).Value;
-                    dataDescriptor.Writable = ((DataDescriptor)descriptor).Value;
-                    dataDescriptor.Configurable = descriptor.Configurable;
-                    dataDescriptor.Enumerable = descriptor.Enumerable;
-                    //var configurable = ((DataDescriptor)descriptor).Configurable;
-                    //var writable = ((DataDescriptor)descriptor).Writable;
-                    //var value = ((DataDescriptor)descriptor).Value;
-                    //var enumerable = ((DataDescriptor)descriptor).Enumerable;
-                    //if (configurable==null) { dataDescriptor.SetDefaultValue("configurable"); }
-                    //else { dataDescriptor.Configurable = configurable; }
-                    //if (writable==null) { dataDescriptor.SetDefaultValue("writable"); }
-                    //else dataDescriptor.Writable = writable;
-                    //if (value==null) { dataDescriptor.SetDefaultValue("value"); }
-                    //else dataDescriptor.Value = value;
-                    //if (enumerable == null) { dataDescriptor.SetDefaultValue("enumerable"); }
-                    //else dataDescriptor.Enumerable = enumerable;
-                    namedDataProperties.Add(propertyName, dataDescriptor);
+                    newDescriptor = new PropertyDescriptorType(DescriptorType.DATA);
+                    var value = descriptor.Attributes["value"];
+                    var writable = descriptor.Attributes["writable"];
+                    if (value != null) newDescriptor.Attributes["value"] = value;
+                    if (writable != null) newDescriptor.Attributes["writable"] = writable;
                 }
                 else
                 {
-                    AcessorDescriptor acessorDescriptor = new AcessorDescriptor();
-                    acessorDescriptor.Get = ((AcessorDescriptor)descriptor).Get;
-                    acessorDescriptor.Set = ((AcessorDescriptor)descriptor).Set;
-                    acessorDescriptor.Configurable = descriptor.Configurable;
-                    acessorDescriptor.Enumerable = descriptor.Enumerable;
-                    //var configurable = ((AcessorDescriptor)descriptor).Configurable;
-                    //var enumerable = ((AcessorDescriptor)descriptor).Enumerable;
-                    //var get = ((AcessorDescriptor)descriptor).Get;
-                    //var set = ((AcessorDescriptor)descriptor).Set;
-                    //if (configurable==null) { acessorDescriptor.SetDefaultValue("configurable"); }
-                    //else acessorDescriptor.Configurable = configurable;
-                    //if (enumerable==null) { acessorDescriptor.SetDefaultValue("enumerable"); }
-                    //else acessorDescriptor.Enumerable = enumerable;
-                    //if (get==null) { acessorDescriptor.SetDefaultValue("get"); }
-                    //else acessorDescriptor.Get = get;
-                    //if (set==null) { acessorDescriptor.SetDefaultValue("set"); }
-                    //else acessorDescriptor.Set = set;
-                    namedAccessorProperties.Add(propertyName, acessorDescriptor);
+                    newDescriptor = new PropertyDescriptorType(DescriptorType.ACCESSOR);
+                    PropertyDescriptorType acessorDescriptor = new PropertyDescriptorType(DescriptorType.ACCESSOR);
+                    var get = descriptor.Attributes["get"];
+                    var set = descriptor.Attributes["set"];
+                    if (get != null) newDescriptor.Attributes["get"] = get;
+                    if (set != null) newDescriptor.Attributes["set"] = set;
                 }
+                if (enumerable != null) newDescriptor.Attributes["enumerable"] = enumerable;
+                if (configurable != null) newDescriptor.Attributes["configurable"] = configurable;
+                namedProperties.Add(propertyName, newDescriptor);
                 return true;
             }
             if (descriptor.Attributes.Count == 0) return true;
             // same - true, если все поля в descriptor также встречаются в current,
             // и значение каждого поля в Desc оказывается таким же, 
             // что и у соответствующего поля в current (TODO? при сравнении с помощью алгоритма SameValue (9.12).)
-            // TEST! Срочно проверить будет ли работать
+            // QUESTION TODO TEST! Срочно проверить будет ли работать
             bool same = descriptor.Attributes.Cast<DictionaryEntry>()
                 .Union(((PropertyDescriptorType)current).Attributes.Cast<DictionaryEntry>()).Count() == descriptor.Attributes.Count;
             if (same) return true;
-            if ((bool)((PropertyDescriptorType)current).Configurable == false)
+            if ((bool)((PropertyDescriptorType)current).Attributes["configurable"] == false)
             {
-                if ((bool)descriptor.Configurable == true)
+                if ((bool)descriptor.Attributes["configurable"])
                 {
                     if (needThrow) throw new Exception("TypeError");
                     return false;
                 }
                 // Булево отрицание = просто неравенство двух значений?
-                if (descriptor.Enumerable != null && ((PropertyDescriptorType)current).Enumerable != descriptor.Enumerable)
+                if (descriptor.Attributes["enumerable"] != null 
+                    && ((PropertyDescriptorType)current).Attributes["enumerable"] != descriptor.Attributes["enumerable"])
                 {
                     if (needThrow) throw new Exception("TypeError");
                     return false;
                 }
             }
-            if (!isGenericDescriptor(descriptor))
+            if (!EcmaScript.IsGenericDescriptor(descriptor))
             {
-                if (current is DataDescriptor != descriptor is DataDescriptor)
+                if (EcmaScript.IsDataDescriptor(current) != EcmaScript.IsDataDescriptor(descriptor))
                 {
-                    if ((bool)((PropertyDescriptorType)current).Configurable == false)
+                    if ((bool)((PropertyDescriptorType)current).Attributes["configurable"] == false)
                     {
                         if (needThrow) throw new Exception("TypeError");
                         return false;
                     }
-                    if (current is DataDescriptor)
+                    // QUESTION TEST
+                    PropertyDescriptorType oldDescriptor = (PropertyDescriptorType)GetProperty(propertyName);
+                    PropertyDescriptorType newDescriptor;
+                    delete(propertyName, needThrow); // QUESTION TEST
+                    if (EcmaScript.IsDataDescriptor(current))
                     {
-                        DataDescriptor oldDataDescriptor = namedDataProperties[propertyName];
-                        namedDataProperties.Remove(propertyName);
-                        AcessorDescriptor newAcessorDescriptor = new AcessorDescriptor();
-                        newAcessorDescriptor.SetDefaultValue("get");
-                        newAcessorDescriptor.SetDefaultValue("set");
-                        newAcessorDescriptor.Configurable = oldDataDescriptor.Configurable;
-                        newAcessorDescriptor.Enumerable = oldDataDescriptor.Enumerable;
+                        newDescriptor = new PropertyDescriptorType(DescriptorType.ACCESSOR);
                     }
                     else
                     {
-                        AcessorDescriptor oldAcessorDescriptor = namedAccessorProperties[propertyName];
-                        namedAccessorProperties.Remove(propertyName);
-                        DataDescriptor newDataDescriptor = new DataDescriptor();
-                        newDataDescriptor.SetDefaultValue("value");
-                        newDataDescriptor.SetDefaultValue("writable");
-                        newDataDescriptor.Configurable = oldAcessorDescriptor.Configurable;
-                        newDataDescriptor.Enumerable = oldAcessorDescriptor.Enumerable;
+                        newDescriptor = new PropertyDescriptorType(DescriptorType.DATA);
                     }
+                    newDescriptor.Attributes["configurable"] = oldDescriptor.Attributes["configurable"];
+                    newDescriptor.Attributes["enumerable"] = oldDescriptor.Attributes["enumerable"];
                 }
                 else
                 {
-                    if (current is DataDescriptor && descriptor is DataDescriptor)
+                    if (EcmaScript.IsDataDescriptor(current) && EcmaScript.IsDataDescriptor(descriptor))
                     {
-                        if ((bool)((DataDescriptor)current).Configurable == false)
+                        if ((bool)((PropertyDescriptorType)current).Attributes["configurable"] == false)
                         {
-                            if ((bool)((DataDescriptor)current).Writable == false
-                                && (bool)((DataDescriptor)descriptor).Writable == true)
+                            if ((bool)((PropertyDescriptorType)current).Attributes["writable"] == false
+                                && (bool)((PropertyDescriptorType)descriptor).Attributes["writable"] == true)
                             {
                                 if (needThrow) throw new Exception("TypeError");
                                 return false;
                             }
-                            if ((bool)((DataDescriptor)current).Writable == false)
+                            if ((bool)((PropertyDescriptorType)current).Attributes["writable"] == false)
                             {
                                 // SameValue or Equal??
-                                // CHECK!!!
+                                // TODO !!!
                                 if (descriptor.Attributes["value"] != null
-                                    && EcmaScript.SameValue((EcmaType)descriptor.Attributes["value"], (EcmaType)((DataDescriptor)current).Attributes["value"]) == false)
+                                    && EcmaScript.SameValue(descriptor.Attributes["value"], ((PropertyDescriptorType)current).Attributes["value"]) == false)
                                 {
                                     if (needThrow) throw new Exception("TypeError");
                                     return false;
                                 }
-
                             }
                         }
                         else
@@ -467,67 +425,26 @@ namespace JavaScriptInterpreter.Types
                     }
                     else
                     {
-                        if ((bool)((AcessorDescriptor)current).Configurable == false)
+                        if ((bool)((PropertyDescriptorType)current).Attributes["configurable"] == false)
                         {
                             if (descriptor.Attributes["set"] != null
-                                    && EcmaScript.SameValue((EcmaType)descriptor.Attributes["set"], (EcmaType)((AcessorDescriptor)current).Attributes["set"]) == false)
+                                    && EcmaScript.SameValue(descriptor.Attributes["set"], ((PropertyDescriptorType)current).Attributes["set"]) == false)
                             {
                                 if (needThrow) throw new Exception("TypeError");
                                 return false;
                             }
                             if (descriptor.Attributes["get"] != null
-                                    && EcmaScript.SameValue((EcmaType)descriptor.Attributes["get"], (EcmaType)((AcessorDescriptor)current).Attributes["get"]) == false)
+                                    && EcmaScript.SameValue(descriptor.Attributes["get"], ((PropertyDescriptorType)current).Attributes["get"]) == false)
                             {
                                 if (needThrow) throw new Exception("TypeError");
                                 return false;
                             }
                         }
                     }
-                    PropertyDescriptorType prop;
-                    if (namedDataProperties.ContainsKey(propertyName)) prop = namedDataProperties[propertyName];
-                    else prop = namedAccessorProperties[propertyName];
-                    descriptor.Attributes = (Hashtable)prop.Attributes.Clone(); // TEST!
-                    return true;
                 }
             }
-            //if (descriptor.Configurable==null && descriptor.Enumerable==null)
-            //{
-            //    if (descriptor is DataDescriptor
-            //        && !((DataDescriptor)descriptor).Value.HasValue && !((DataDescriptor)descriptor).Writable.HasValue)
-            //    {
-            //        return true;
-            //    }
-            //    if (descriptor is AcessorDescriptor
-            //        && !((AcessorDescriptor)descriptor).Get.HasValue && !((AcessorDescriptor)descriptor).Set.HasValue)
-            //    {
-            //        return true;
-            //    }
-            //}
-            //if (descriptor.Configurable.Value == ((PropertyDescriptorType)current).Configurable.Value
-            //    && descriptor.Enumerable.Value == ((PropertyDescriptorType)current).Enumerable.Value)
-            //{
-            //    if (descriptor is DataDescriptor)
-            //    {
-            //        if (EcmaScript.SameValue(((DataDescriptor)descriptor).Value.Value, ((DataDescriptor)current).Value.Value)
-            //            && ((DataDescriptor)descriptor).Writable == ((DataDescriptor)current).Writable)
-            //        {
-            //            return true;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        if (EcmaScript.SameValue(((AcessorDescriptor)descriptor).Get.Value, ((AcessorDescriptor)current).Get.Value)
-            //            && EcmaScript.SameValue(((AcessorDescriptor)descriptor).Set.Value, ((AcessorDescriptor)current).Set.Value))
-            //        {
-            //            return true;
-            //        }
-            //    }
-            //}
-            //if (((PropertyDescriptorType)current).Configurable.Value == false)
-            //{
-            //    if (descriptor.Configurable == true) reject(needThrow);
-                
-            //}
+            PropertyDescriptorType prop = namedProperties[propertyName];
+            descriptor.Attributes = (Hashtable)prop.Attributes.Clone(); // TEST!
             return true;
         }
         /* ------------------------------------*/
@@ -535,73 +452,57 @@ namespace JavaScriptInterpreter.Types
     #endregion
 
     #region Specification_types
-    public abstract class PropertyDescriptorType : EcmaType
+    public class PropertyDescriptorType
     {
         public Hashtable Attributes;
-        //private bool? enumerable;    // Если true, данное свойство можно перечислить с помощью for-in
-        //private bool? configurable;  // Если false, нельзя будет удалить данное свойство, измнеить его, сделав свойством-аксессором
-        //                            // или изменить его атрибуты (кроме Value)
-        
-        protected PropertyDescriptorType()
+
+        public PropertyDescriptorType(DescriptorType type)
         {
             Attributes = new Hashtable();
-        }
 
-        public object Enumerable
-        {
-            get { return Attributes["enumerable"]; }
-            set
+            switch (type)
             {
-                if (value != null)
-                {
-                    if (value is bool)
+                case DescriptorType.DATA:
                     {
-                        Attributes["enumerable"] = value;
+                        SetDefaultValue("value");
+                        SetDefaultValue("writable");
+                        SetDefaultValue("enumerable");
+                        SetDefaultValue("configurable");
+                        break;
                     }
-                    else { throw new Exception("Error: Enumerable should be bool value"); }
-                }
-                else
-                {
-                    SetDefaultValue("enumerable");
-                }
-            }
-        }
-        public object Configurable
-        {
-            get { return Attributes["configurable"]; }
-            set
-            {
-                if (value != null)
-                {
-                    if (value is bool)
+                case DescriptorType.ACCESSOR:
                     {
-                        if (value != null) Attributes["configurable"] = value;
+                        SetDefaultValue("get");
+                        SetDefaultValue("set");
+                        SetDefaultValue("enumerable");
+                        SetDefaultValue("configurable");
+                        break;
                     }
-                    else { throw new Exception("Error: Configurable should be bool value"); }
-                }
-                else
-                {
-                    SetDefaultValue("configurable");
-                }
+                default:
+                    //throw new Exception("Unknown type of property descriptor (use \"data\" or \"acessor\"");
+                    {
+                        break;
+                    }
             }
-        }
+            
+        }   
         public void SetDefaultValue(string attribute)
         {
             switch (attribute)
             {
-                case "enumerable":
+                case "enumerable":              // Если true, данное свойство можно перечислить с помощью for-in
                     {
                         Attributes["enumerable"] = false;
                         break;
                     }
-                case "configurable":
+                case "configurable":            // Если false, нельзя будет удалить данное свойство, измнеить его, сделав свойством-аксессором или изменить его атрибуты (кроме Value)
                     {
                         Attributes["configurable"] = false;
                         break;
                     }
                 case "value":
                     {
-                        Attributes["value"] = UndefinedType.Value;
+                        Attributes["value"] = EcmaTypes.UNDEFINED;
                         break;
                     }
                 case "writable":
@@ -611,12 +512,12 @@ namespace JavaScriptInterpreter.Types
                     }
                 case "get":
                     {
-                        Attributes["get"] = UndefinedType.Value;
+                        Attributes["get"] = EcmaTypes.UNDEFINED;
                         break;
                     }
                 case "set":
                     {
-                        Attributes["set"] = UndefinedType.Value;
+                        Attributes["set"] = EcmaTypes.UNDEFINED;
                         break;
                     }
                 default:
@@ -624,115 +525,13 @@ namespace JavaScriptInterpreter.Types
             }
         }
     }
-    public class DataDescriptor : PropertyDescriptorType
+    public class Reference
     {
-        public DataDescriptor()
-            : base()
-        { }
-        public DataDescriptor(EcmaType value, bool writable, bool enumerable, bool configurable)
-            : base()
-        {
-            this.Value = value;
-            this.Writable = writable;
-            this.Enumerable = enumerable;
-            this.Configurable = configurable;
-        }
-        public object Value
-        {
-            get
-            {
-                return Attributes["value"];
-            }
-            set
-            {
-                // QUESTION EcmaType OR?? Будет ли работать с наследниками
-                if (value != null)
-                {
-                    if (value is EcmaType) { Attributes["value"] = value; }
-                    else { throw new Exception("Error: Value should be instance of ECMAtype"); }
-                }
-                else
-                {
-                    SetDefaultValue("value");
-                }
-            }
-        }
-        public object Writable
-        {
-            get
-            {
-                return Attributes["writable"];
-            }
-            set
-            {
-                if (value != null)
-                {
-                    if (value is bool) { Attributes["writable"] = value; }
-                    else { throw new Exception("Error: Writable should be bool value"); }
-                }
-                else
-                {
-                    SetDefaultValue("writable");
-                }
-            }
-        }
-
-
-        
-    }
-    public class AcessorDescriptor : PropertyDescriptorType
-    {
-        public AcessorDescriptor()
-            : base()
-        { }
-        public object Get
-        {
-            get
-            {
-                return Attributes["get"];
-            }
-            set
-            {
-                // QUESTION EcmaType OR?? Будет ли работать с наследниками
-                if (value != null)
-                {
-                    if (value is EcmaType) { Attributes["get"] = value; }
-                    else { throw new Exception("Error: Get should be instance of ECMAtype"); }
-                }
-                else
-                {
-                    SetDefaultValue("get");
-                }
-            }
-        }
-        public object Set
-        {
-            get
-            {
-                return Attributes["set"];
-            }
-            set
-            {
-                // QUESTION EcmaType OR?? Будет ли работать с наследниками
-                if (value != null)
-                {
-                    if (value is EcmaType) { Attributes["set"] = value; }
-                    else { throw new Exception("Error: Set should be instance of ECMAtype"); }
-                }
-                else
-                {
-                    SetDefaultValue("set");
-                }
-            }
-        }
-    }
-    public class Reference : EcmaType
-    {
-        private EcmaType baseValue;     // база Undefined, BooleanType, StringType, NumberType
+        private object baseValue;     // база Undefined, BooleanType, StringType, NumberType, или EnvironmentRecord
         private string referenceName;   // имя ссылки
         private bool strictReference;   // строгая ссылка
 
-        public EcmaType BaseValue { get; set; }
+        public object BaseValue { get; set; }
         public string ReferenceName { get; set; }
         public bool StrictReference { get; set; }
     }

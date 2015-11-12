@@ -12,11 +12,9 @@ namespace JavaScriptInterpreter
     {
         private Queue<Token> lexems;
         private Token sym;
-        private Interpreter interpreter;
-        public Parser(Queue<Token> lexems, Interpreter interpreter)
+        public Parser(Queue<Token> lexems)
         {
             this.lexems = lexems;
-            this.interpreter = interpreter;
             this.sym = nextToken();
         }
         private Token nextToken()
@@ -47,7 +45,7 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                interpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", tag.ToString()));
+                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", tag.ToString()));
             }
             return node;
         }
@@ -60,7 +58,7 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                interpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", reservedWord));
+                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", reservedWord));
             }
             return node;
         }
@@ -489,28 +487,28 @@ namespace JavaScriptInterpreter
         }
 
 
-        //// FunctionExpression = function [Identifier] "(" [FormalParameters] ")" "{" FunctionBody "}"
-        //private Node parseFunctionExpression()
-        //{
-        //    Node functionExpression = new Node("Function expression");
-        //    functionExpression.AddChild(parseReservedWord("function"));
-        //    if (checkTokenTag(DomainTag.IDENT))
-        //    {
-        //        functionExpression.AddChild(parseToken(DomainTag.IDENT));
-        //    }
-        //    functionExpression.AddChild(parseToken(DomainTag.LPARENT));
-        //    if (checkTokenTag(DomainTag.IDENT)) 
-        //    {
-        //        functionExpression.AddChildren(parseFormalParameters());
-        //    }
-        //    functionExpression.AddChild(parseToken(DomainTag.RPARENT));
-        //    functionExpression.AddChild(parseToken(DomainTag.LBRACE));
-        //    functionExpression.AddChild(parseFunctionBody());
-        //    functionExpression.AddChild(parseToken(DomainTag.RBRACE));
-        //    return functionExpression;
-        //}
-        // FormalParameters = Identifier | FormalParameters , Identifier
-        // QUESTION? FormalParameters = Identifier { , Identifier }
+        // FunctionExpression = function [Identifier] "(" [FormalParameters] ")" "{" FunctionBody "}"
+        private Node parseFunctionExpression()
+        {
+            Node functionExpression = new Node("Function expression");
+            functionExpression.AddChild(parseReservedWord("function"));
+            if (checkTokenTag(DomainTag.IDENT))
+            {
+                functionExpression.AddChild(parseToken(DomainTag.IDENT));
+            }
+            functionExpression.AddChild(parseToken(DomainTag.LPARENT));
+            if (checkTokenTag(DomainTag.IDENT)) 
+            {
+                functionExpression.AddChildren(parseFormalParameters());
+            }
+            functionExpression.AddChild(parseToken(DomainTag.RPARENT));
+            functionExpression.AddChild(parseToken(DomainTag.LBRACE));
+            functionExpression.AddChild(parseFunctionBody());
+            functionExpression.AddChild(parseToken(DomainTag.RBRACE));
+            return functionExpression;
+        }
+         //FormalParameters = Identifier | FormalParameters , Identifier
+         //QUESTION? FormalParameters = Identifier { , Identifier }
         
 
         // --------------------------------------Выражения ---------------------------------------//
@@ -669,31 +667,41 @@ namespace JavaScriptInterpreter
         // MemberExpression = PrimaryExpression | FunctionExpression | MemberExpression "[" Expression "]" 
         //                      | MemberExpression "." Identifier | new MemberExpression Arguments
         // MemberExpression = ( PrimaryExpression | FunctionExpression | new MemberExpression Arguments ) MemberExpression'
-        // MemberExpression = PrimaryExpression [ ( "." MemberExpression | "[" Expression "]" | "(" [ArgumentList] ")") ]		
+        // MemberExpression = PrimaryExpression [ ( "." MemberExpression | "[" Expression "]" | "(" [ArgumentList] ")") ]	
+	    //                      | FunctionExpression
         private Node parseMemberExpression()
         {
             Node memberExpression = new Node("Member expression");
-            memberExpression.AddChild(parsePrimaryExpression());
-            if (checkTokenTag(DomainTag.POINT))
+            if (inFirstOfPrimaryExpression())
             {
-                memberExpression.AddChild(parseToken(DomainTag.POINT));
-                memberExpression.AddChild(parseMemberExpression());
-            }else if (checkTokenTag(DomainTag.LSBRACKET))
-            {
-                memberExpression.AddChild(parseToken(DomainTag.LSBRACKET));
-                memberExpression.AddChild(parseExpression());
-                memberExpression.AddChild(parseToken(DomainTag.RSBRACKET));
-            }
-            else if (checkTokenTag(DomainTag.LPARENT))
-            {
-                memberExpression.AddChild(parseToken(DomainTag.LPARENT));
-                if (inFirstOfAssignmentExpression())
+                memberExpression.AddChild(parsePrimaryExpression());
+                if (checkTokenTag(DomainTag.POINT))
                 {
-                    memberExpression.AddChildren(parseArgumentList());
+                    memberExpression.AddChild(parseToken(DomainTag.POINT));
+                    memberExpression.AddChild(parseMemberExpression());
                 }
-                memberExpression.AddChild(parseToken(DomainTag.RPARENT));
+                else if (checkTokenTag(DomainTag.LSBRACKET))
+                {
+                    memberExpression.AddChild(parseToken(DomainTag.LSBRACKET));
+                    memberExpression.AddChild(parseExpression());
+                    memberExpression.AddChild(parseToken(DomainTag.RSBRACKET));
+                }
+                else if (checkTokenTag(DomainTag.LPARENT))
+                {
+                    memberExpression.AddChild(parseToken(DomainTag.LPARENT));
+                    if (inFirstOfAssignmentExpression())
+                    {
+                        memberExpression.AddChildren(parseArgumentList());
+                    }
+                    memberExpression.AddChild(parseToken(DomainTag.RPARENT));
+                }
+            }
+            else
+            {
+                memberExpression.AddChild(parseFunctionDeclaration());
             }
             return memberExpression;
+
         }
         // ArgumentList = AssignmentExpression [ "," ArgumentList ]
         private List<Node> parseArgumentList()

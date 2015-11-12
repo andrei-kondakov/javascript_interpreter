@@ -60,7 +60,7 @@ namespace JavaScriptInterpreter
         // sym in FIRST[MemberExpression]
         private bool inFirstOfMemberExpression()
         {
-            return inFirstOfPrimaryExpression();
+            return inFirstOfPrimaryExpression() || checkReservedWord("function");
         }
         // sym in First[ArgumentList] 
         private bool inFirstOfArgumentList()

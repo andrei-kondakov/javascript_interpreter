@@ -18,22 +18,21 @@ namespace JavaScriptInterpreter
         }
         public override string ToString()
         {
-            return Coords.ToString() + " " + Tag.ToString();
+            //return Coords.ToString() + " " + Tag.ToString();
+            return Tag.ToString();
         }
     }
     public class IdentToken : Token
     {
-        public readonly int Code;
         public readonly string Name;
 
-        public IdentToken(int code, string name, Position starting, Position following) : base(DomainTag.IDENT, starting, following)
+        public IdentToken(string name, Position starting, Position following) : base(DomainTag.IDENT, starting, following)
         {
-            this.Code = code;
             this.Name = name;
         }
         public override string ToString()
         {
-            return base.ToString() + " " + Name + " " + Code;
+            return base.ToString() + " " + Name;
         }
     }
     public class NumberToken : Token

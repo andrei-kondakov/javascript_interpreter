@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO;
 
 namespace JavaScriptInterpreter
 {
@@ -11,8 +12,9 @@ namespace JavaScriptInterpreter
     {
         static void Main(string[] args)
         {
-            Interpreter js_interpreter = new Interpreter("");
-            js_interpreter.Start();
+            string pathToProgram = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "program.txt");
+            JSInterpreter.Start(pathToProgram);
+            //JSInterpreter.Start(null);
         }
     }
 }

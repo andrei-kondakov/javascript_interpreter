@@ -8,14 +8,14 @@ using System.Collections;
 namespace JavaScriptInterpreter.Types
 {
     #region Language_types
-    enum EcmaTypes
+    public enum EcmaTypes
     {
         UNDEFINED,
         NULL,
         TRUE,
         FALSE
     }
-    enum DescriptorType
+    public enum DescriptorType
     {
         DATA,
         ACCESSOR,

@@ -56,11 +56,10 @@ namespace JavaScriptInterpreter
     {
         private static HashSet<string> reservedWords;
         public string Program;
-        private Interpreter interpreter;
         private Position cur;
-        public Lexer(string program, Interpreter interpreter)
+        public int indent = 0; // отступ
+        public Lexer(string program)
         {
-            this.interpreter = interpreter;
             this.Program = program;
             cur = new Position(program);
             reservedWords = new HashSet<string>
@@ -91,7 +90,7 @@ namespace JavaScriptInterpreter
                                 cur++;
                                 if (cur.IsNewLine)
                                 {
-                                    interpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
+                                    JSInterpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
                                 }
                             } while (cur.Cp != '\'');
                             return new StringToken(Program.Substring(start.Index, cur.Index - start.Index + 1), start, ++cur);
@@ -103,7 +102,7 @@ namespace JavaScriptInterpreter
                                 cur++;
                                 if (cur.IsNewLine)
                                 {
-                                    interpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
+                                    JSInterpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
                                 }
                             } while (cur.Cp != '\"');
                             return new StringToken(Program.Substring(start.Index, cur.Index - start.Index + 1), start, ++cur);
@@ -117,9 +116,15 @@ namespace JavaScriptInterpreter
                     case ',':
                         return new SpecToken(DomainTag.COMMA, start, ++cur);
                     case '{':
-                        return new SpecToken(DomainTag.LBRACE, start, ++cur);
+                        {
+                            indent++;
+                            return new SpecToken(DomainTag.LBRACE, start, ++cur);
+                        }
                     case '}':
-                        return new SpecToken(DomainTag.RBRACE, start, ++cur);
+                        {
+                            indent--;
+                            return new SpecToken(DomainTag.RBRACE, start, ++cur);
+                        }
                     case '[':
                         return new SpecToken(DomainTag.LSBRACKET, start, ++cur);
                     case ']':
@@ -213,7 +218,7 @@ namespace JavaScriptInterpreter
                                 {
                                     return new ReservedWordToken(name, start, cur);
                                 }
-                                return new IdentToken(interpreter.AddName(name), name, start, cur);
+                                return new IdentToken(name, start, cur);
                             }
                             else if (cur.IsDecimalDigit)
                             {
@@ -228,7 +233,7 @@ namespace JavaScriptInterpreter
                                 }
                                 catch (System.OverflowException)
                                 {
-                                    interpreter.ShowErrorAndStop(cur, "int number is too large");
+                                    JSInterpreter.ShowErrorAndStop(cur, "int number is too large");
                                 }
                             }
                             break;

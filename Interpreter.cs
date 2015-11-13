@@ -13,7 +13,7 @@ namespace JavaScriptInterpreter
         private static bool debug = true;
         public static void ShowErrorAndStop(Position pos, string text)
         {
-            throw new Exception(String.Format("Error {0}: {1}", pos.ToString(), text));
+            throw new Exception(String.Format("Error: {0}", text));
         }
         public static void Start(string sourceCode)
         {
@@ -72,31 +72,39 @@ namespace JavaScriptInterpreter
                         string input = Console.ReadLine();
                         Lexer lexer = new Lexer(input);
                         lexer.indent = indent;
-                        while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
+                        try
                         {
-                            lexems.Enqueue(token);
-                        }
-                        indent = lexer.indent;
-                        if (indent == 0)
-                        {
-                            if (debug)
+                            while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
                             {
-                                Console.WriteLine("--- Lexer result:");
-                                foreach (Token tkn in lexems)
+                                lexems.Enqueue(token);
+                            }
+                            indent = lexer.indent;
+                            if (indent == 0)
+                            {
+                                if (debug)
                                 {
-                                    Console.WriteLine(tkn.ToString());
+                                    Console.WriteLine("--- Lexer result:");
+                                    foreach (Token tkn in lexems)
+                                    {
+                                        Console.WriteLine(tkn.ToString());
+                                    }
                                 }
+                                using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
+                                using (StreamWriter sw = new StreamWriter(fs))
+                                {
+                                    sw.WriteLine("################################# INPUT #######################################");
+                                    sw.WriteLine(input);
+                                    //sw.WriteLine("################################## END ########################################");
+                                    sw.WriteLine("############################## PARSE TREE #####################################");
+                                }
+                                Parser parser = new Parser(lexems);
+                                parser.Start();
+                                lexems.Clear();
                             }
-                            using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
-                            using (StreamWriter sw = new StreamWriter(fs))
-                            {
-                                sw.WriteLine("################################# INPUT #######################################");
-                                sw.WriteLine(input);
-                                //sw.WriteLine("################################## END ########################################");
-                                sw.WriteLine("############################## PARSE TREE #####################################");
-                            }
-                            Parser parser = new Parser(lexems);
-                            parser.Start();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
                             lexems.Clear();
                         }
                     }
@@ -109,15 +117,11 @@ namespace JavaScriptInterpreter
             }
             finally
             {
-                if (sourceCode != null)
-                {
+                //if (sourceCode != null)
+               // {
                     Console.WriteLine("Press any key to continue");
                     Console.ReadKey();
-                }
-                else
-                {
-                    Start(null);
-                }
+                //}
             }
         }
     }

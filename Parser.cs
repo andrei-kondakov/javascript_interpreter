@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.IO;
+using AST;
 
 namespace JavaScriptInterpreter
 {
@@ -45,7 +46,7 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", tag.ToString()));
+                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, System.String.Format("Expected \"{0}\"", tag.ToString()));
             }
             return node;
         }
@@ -58,16 +59,24 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, String.Format("Expected \"{0}\"", reservedWord));
+                JSInterpreter.ShowErrorAndStop(sym.Coords.Starting, System.String.Format("Expected \"{0}\"", reservedWord));
             }
             return node;
         }
         public void Start()
         {
             Node parseTree;
+            //if (filePath != null) File.WriteAllText(filePath, string.Empty);
+            //    print("", true, filePath);
             parseTree = parseProgram();
             string filePath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
-            parseTree.print(filePath);
+            using (FileStream fs = new FileStream(filePath, FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                sw.WriteLine(parseTree.ToString());
+            }
+            //string filePath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
+            //parseTree.print(filePath);
         }
         // --------------------------------------Программа ---------------------------------------//
         // Program = Elements

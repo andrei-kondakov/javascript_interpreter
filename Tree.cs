@@ -6,21 +6,35 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.IO;
 
-namespace JavaScriptInterpreter
+namespace AST
 {
-    class Node
+    public abstract class AstElement
     {
-        private object data;
-        private List<Node> children;
-        public Node(object data)
+        protected object data;
+        public AstElement(object data)
         {
             this.data = data;
-            this.children = new List<Node>();
         }
-        public object Data
+        public override string ToString()
         {
-            get { return data; }
-            set { data = value; }
+            return this.ToString(string.Empty, true);
+        }
+        public virtual string ToString(string prefix, bool isTail)
+        {
+            return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
+        }
+        public virtual void Execute()
+        {
+            throw new NotImplementedException();
+        }
+    }
+    class Node : AstElement
+    {
+        private List<Node> children;
+        public Node(object data)
+            : base(data)
+        {
+            this.children = new List<Node>();
         }
         public void AddChild(Node child)
         {
@@ -30,40 +44,84 @@ namespace JavaScriptInterpreter
         {
             this.children.AddRange(children);
         }
-        public void print(string filePath)
+        public override string ToString(string prefix, bool isTail)
         {
-            //if (filePath != null) File.WriteAllText(filePath, string.Empty);
-            print("", true, filePath);
-        }
-
-        private void print(string prefix, bool isTail, string filePath)
-        {
-            if (filePath != null)
-            {
-                using (FileStream fs = new FileStream(filePath, FileMode.Append, FileAccess.Write))
-                using (StreamWriter sw = new StreamWriter(fs))
-                {
-                    //sw.WriteLine(prefix + (isTail ? "└── " : "├── ") + "[" + data.ToString() + "]");
-                    sw.WriteLine(prefix + (isTail ? "└── " : "├── ") + data.ToString());
-                }
-            }
-            else
-            {
-                Console.WriteLine(prefix + (isTail ? "└── " : "├── ") + data.ToString() );
-            }
-
-            //     Console.WriteLine(prefix + (isTail ? "└── " : "├── ") + "[" + data.ToString() + "]");
-
-
+            string result;
+            result = base.ToString(prefix, isTail);
             for (int i = 0; i < children.Count - 1; i++)
             {
-                children[i].print(prefix + (isTail ? "    " : "│   "), false, filePath);
+                result += children[i].ToString(prefix + (isTail ? "    " : "│   "), false);
             }
             if (children.Count > 0)
             {
-                children[children.Count - 1].print(prefix + (isTail ? "    " : "│   "), true, filePath);
+                result += children[children.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
             }
+            return result;
+        }
+        public override void Execute()
+        {
+            throw new NotImplementedException();
         }
     }
+
+    public class Expression : AstElement
+    {
+        public Expression()
+            : base("Expression")
+        { }
+    }
+
+    public class Number : Expression
+    {
+        private double value;
+        public Number(double value)
+            : base()
+        {
+            this.value = value;
+        }
+    }
+    public class String : Expression
+    {
+        private string value;
+        public String(string value)
+            : base()
+        {
+            this.value = value;
+        }
+    }
+
+    abstract class BinaryNode : AstElement
+    {
+        protected AstElement left;
+        protected AstElement right;
+        public BinaryNode(string operation, AstElement left, AstElement right)
+            : base(operation)
+        {
+            this.left = left;
+            this.right = right;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            result += left.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += right.ToString(prefix + (isTail ? "    " : "│   "), true);
+            return result;
+        }
+    }
+    #region Additive Operations
+    class Plus : BinaryNode
+    {
+        public Plus(AstElement left, AstElement right)
+            : base("+", left, right)
+        { }
+
+        public override void Execute()
+        {
+            throw new NotImplementedException();
+        }
+    }
+    #endregion
 }
+    
 

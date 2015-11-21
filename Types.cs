@@ -718,15 +718,51 @@ namespace JavaScriptInterpreter.Types
 
         }
     }
-    //public class ObjectEnviromentRecord : EnvironmentRecord
-    //{
+    public class ObjectEnviromentRecord : EnvironmentRecord
+    {
 
-    //}
-    //public class LexicalEnvironment : EcmaType
-    //{
-    //    private EnvironmentRecord record;
-    //    private LexicalEnvironment externalLexicalEnvironment; // ссылка! на внешнее лексическое окружение
-    //}
+        protected override bool hasBinding(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void createMutableBinding(string name, bool delete)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void setMutableBinding(string name, object value, bool strict)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override object getBindingValue(string name, bool strict)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override bool deleteBinding(string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override object implicitThisValue()
+        {
+            throw new NotImplementedException();
+        }
+    }
+    public class LexicalEnvironment
+    {
+        private EnvironmentRecord environmentRecord;
+        private LexicalEnvironment externalLexicalEnvironment; // ссылка! на внешнее лексическое окружение
+        public LexicalEnvironment(EnvironmentRecord environmentRecord, LexicalEnvironment externalLexicalEnvironment)
+        {
+            this.environmentRecord = environmentRecord;
+            this.externalLexicalEnvironment = externalLexicalEnvironment;
+        }
+
+
+    }
 
     
 }

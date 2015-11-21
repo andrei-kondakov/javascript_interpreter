@@ -154,11 +154,11 @@ namespace JavaScriptInterpreter
             return value.Equals(EcmaTypes.TRUE) || value.Equals(EcmaTypes.FALSE);
         }
         // ------------------------ Работа с лексическим окружением --------------------------------//
-        public LexicalEnvironment NewDeclarativeEnvironment(LexicalEnvironment env)
+        public static LexicalEnvironment NewDeclarativeEnvironment(LexicalEnvironment env)
         {
             return new LexicalEnvironment(new DeclarativeEnviromentRecord(), env);
         }
-        public LexicalEnvironment NewObjectEnvironment(ObjectType obj, LexicalEnvironment env)
+        public static LexicalEnvironment NewObjectEnvironment(ObjectType obj, LexicalEnvironment env)
         {
             return new LexicalEnvironment(new ObjectEnviromentRecord(obj), env);
         }

@@ -129,7 +129,7 @@ namespace JavaScriptInterpreter.Types
         /// </summary>
         /// <param name="propertyName">Имя свойства</param>
         /// <returns></returns>
-        private object get(string propertyName)   
+        public object Get(string propertyName)   
         {
             var desc = GetProperty(propertyName);
             if (desc.Equals(EcmaTypes.UNDEFINED)) return EcmaTypes.UNDEFINED;
@@ -259,7 +259,7 @@ namespace JavaScriptInterpreter.Types
         /// </summary>
         /// <param name="propertyName">Имя свойства</param>
         /// <returns></returns>
-        private bool hasProperty(string propertyName)
+        public bool HasProperty(string propertyName)
         {
             var desc = GetProperty(propertyName);
             if (desc.Equals(EcmaTypes.UNDEFINED)) return false;
@@ -272,7 +272,7 @@ namespace JavaScriptInterpreter.Types
         /// <param name="propertyName">Имя свойства</param>
         /// <param name="needThrow">Обработка отказов</param>
         /// <returns></returns>
-        private bool delete(string propertyName, bool needThrow)
+        public bool Delete(string propertyName, bool needThrow)
         {
             var desc = getOwnProperty(propertyName);
             if (desc.Equals(EcmaTypes.UNDEFINED)) return true;
@@ -382,7 +382,7 @@ namespace JavaScriptInterpreter.Types
                     // QUESTION TEST
                     PropertyDescriptorType oldDescriptor = (PropertyDescriptorType)GetProperty(propertyName);
                     PropertyDescriptorType newDescriptor;
-                    delete(propertyName, needThrow); // QUESTION TEST
+                    Delete(propertyName, needThrow); // QUESTION TEST
                     if (EcmaScript.IsDataDescriptor(current))
                     {
                         newDescriptor = new PropertyDescriptorType(DescriptorType.ACCESSOR);
@@ -484,9 +484,15 @@ namespace JavaScriptInterpreter.Types
                     {
                         break;
                     }
-            }
-            
-        }   
+            }   
+        }
+        public PropertyDescriptorType(object value, bool writable, bool enumerable, bool configurable)
+        {
+            Attributes["value"] = value;
+            Attributes["writable"] = writable;
+            Attributes["enumerable"] = enumerable;
+            Attributes["configurable"] = configurable;
+        }
         public void SetDefaultValue(string attribute)
         {
             switch (attribute)
@@ -573,7 +579,7 @@ namespace JavaScriptInterpreter.Types
         /// </summary>
         /// <param name="name">Текст индентификатора</param>
         /// <returns></returns>
-        protected abstract bool hasBinding(string name);
+        public abstract bool HasBinding(string name);
         
         /// <summary>
         /// Создает в записи окружения новую изменяемую привязку.
@@ -581,7 +587,7 @@ namespace JavaScriptInterpreter.Types
         /// <param name="name">Привязанное имя</param>
         /// <param name="delete">Привязка в последствии может быть удалена</param>
         /// <returns></returns>
-        protected abstract void createMutableBinding(string name, bool delete);
+        public abstract void CreateMutableBinding(string name, bool delete);
         
         /// <summary>
         /// Присваивает значение уже существующей в записи окружения изменяемой привязки
@@ -589,26 +595,26 @@ namespace JavaScriptInterpreter.Types
         /// <param name="name">Имя</param>
         /// <param name="value">Значение</param>
         /// <param name="s">Ссылка в сторогом режиме</param>
-        protected abstract void setMutableBinding(string name, object value, bool strict);
+        public abstract void SetMutableBinding(string name, object value, bool strict);
 
         /// <summary>
         /// Возврщает из записи окружения значение уже существующей привязки.
         /// </summary>
         /// <param name="name">Имя привязки</param>
         /// <param name="strict">Ссылка в сторогом режиме</param>
-        protected abstract object getBindingValue(string name, bool strict);
+        public abstract object GetBindingValue(string name, bool strict);
 
         /// <summary>
         /// Удаляет привязку из записи окружения
         /// </summary>
         /// <param name="name">Имя</param>
-        protected abstract bool deleteBinding(string name);
+        public abstract bool DeleteBinding(string name);
 
         /// <summary>
         /// Возвращает значение, которое будет использоваться в качестве значения this при вызове 
         /// объектов функции, получаемых в качестве значений привязки из этой записи окружения
         /// </summary>
-        protected abstract object implicitThisValue();
+        public abstract object ImplicitThisValue();
 
     }
     public class DeclarativeEnviromentRecord : EnvironmentRecord
@@ -703,12 +709,14 @@ namespace JavaScriptInterpreter.Types
         {
             return EcmaTypes.UNDEFINED;
         }
+
         public void CreateImmutableBinding(string name, bool canBeDeleted)
         {
             Debug.Assert(bindings.ContainsKey(name));
             ImmutableBinding immutableBinding = new ImmutableBinding(EcmaTypes.UNDEFINED);
             bindings[name] = immutableBinding;
         }
+
         public void InitializeImmutableBinding(string name, object value)
         {
             Debug.Assert(bindings.ContainsKey(name) && bindings[name] is ImmutableBinding && ((ImmutableBinding)bindings[name]).Initialized == false);
@@ -720,35 +728,64 @@ namespace JavaScriptInterpreter.Types
     }
     public class ObjectEnviromentRecord : EnvironmentRecord
     {
-
-        protected override bool hasBinding(string name)
+        private ObjectType bindingObject; // объект привязки
+        private bool provideThis;
+        public ObjectEnviromentRecord(ObjectType bindingObject)
         {
-            throw new NotImplementedException();
+            this.bindingObject = bindingObject;
+            this.provideThis = false;
         }
 
-        protected override void createMutableBinding(string name, bool delete)
+        public ObjectType BindingObject { get; set; }
+
+        public override bool HasBinding(string name)
         {
-            throw new NotImplementedException();
+            return bindingObject.HasProperty(name);
         }
 
-        protected override void setMutableBinding(string name, object value, bool strict)
+        public override void CreateMutableBinding(string name, bool delete)
         {
-            throw new NotImplementedException();
+            Debug.Assert(bindingObject.HasProperty(name));
+            bindingObject.DefineOwnProperty(name, new PropertyDescriptorType(EcmaTypes.UNDEFINED, true, true, delete), true);
         }
 
-        protected override object getBindingValue(string name, bool strict)
+        public override void SetMutableBinding(string name, object value, bool strict)
         {
-            throw new NotImplementedException();
+            bindingObject.Put(name, value, strict);
         }
 
-        protected override bool deleteBinding(string name)
+        public override object GetBindingValue(string name, bool strict)
         {
-            throw new NotImplementedException();
+            bool value = bindingObject.HasProperty(name);
+            if (value == false)
+            {
+                if (strict == false)
+                {
+                    return EcmaTypes.UNDEFINED;
+                }
+                else
+                {
+                    throw new Exception("ReferenceError");
+                }
+            }
+            return bindingObject.Get(name);
         }
 
-        protected override object implicitThisValue()
+        public override bool DeleteBinding(string name)
         {
-            throw new NotImplementedException();
+            return bindingObject.Delete(name, false);
+        }
+
+        public override object ImplicitThisValue()
+        {
+            if (provideThis)
+            {
+                return bindingObject;
+            }
+            else
+            {
+                return EcmaTypes.UNDEFINED;
+            }
         }
     }
     public class LexicalEnvironment
@@ -760,8 +797,6 @@ namespace JavaScriptInterpreter.Types
             this.environmentRecord = environmentRecord;
             this.externalLexicalEnvironment = externalLexicalEnvironment;
         }
-
-
     }
 
     

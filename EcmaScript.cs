@@ -91,9 +91,11 @@ namespace JavaScriptInterpreter
             if (IsUnresolvableReference(val)) throw new Exception("ReferenceError");
             if (IsPropertyReference(val))
             {
+                throw new NotImplementedException();
                 if (HasPrimitiveBase(val) == false)
                 {
                     // TODO http://es5.javascript.ru/x8.html#x8.7.1
+                    
                 }
                 else
                 {
@@ -102,7 +104,7 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                // TODO
+                
             }
             return null;
         }

@@ -538,6 +538,13 @@ namespace JavaScriptInterpreter.Types
         private string referenceName;   // имя ссылки
         private bool strictReference;   // строгая ссылка
 
+        public Reference(object baseValue, string referenceName, bool strictReference)
+        {
+            this.baseValue = baseValue;
+            this.referenceName = referenceName;
+            this.strictReference = strictReference;
+        }
+
         public object BaseValue { get; set; }
         public string ReferenceName { get; set; }
         public bool StrictReference { get; set; }
@@ -791,11 +798,27 @@ namespace JavaScriptInterpreter.Types
     public class LexicalEnvironment
     {
         private EnvironmentRecord environmentRecord;
-        private LexicalEnvironment externalLexicalEnvironment; // ссылка! на внешнее лексическое окружение
+        private LexicalEnvironment outer; // ссылка! на внешнее лексическое окружение
         public LexicalEnvironment(EnvironmentRecord environmentRecord, LexicalEnvironment externalLexicalEnvironment)
         {
             this.environmentRecord = environmentRecord;
-            this.externalLexicalEnvironment = externalLexicalEnvironment;
+            this.outer = externalLexicalEnvironment;
+        }
+        public object GetIdentifierReference(LexicalEnvironment lex, string name, bool strict)
+        {
+            if (lex == null)
+            {
+                return new Reference(EcmaTypes.UNDEFINED, name, strict);
+            }
+            bool exists = environmentRecord.HasBinding(name);
+            if (exists)
+            {
+                return new Reference(environmentRecord, name, strict);
+            }
+            else
+            {
+                return GetIdentifierReference(outer, name, strict);
+            }
         }
     }
 

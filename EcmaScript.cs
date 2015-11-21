@@ -13,7 +13,7 @@ namespace JavaScriptInterpreter
         public static ObjectType Function;
         public static ObjectType ObjectPrototype; // объект прототип
 
-        public static void Start()
+        public static void EnterInGlobalCode()
         {
             // 15.1
             GlobalObject = new ObjectType();

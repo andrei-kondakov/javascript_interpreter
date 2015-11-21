@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
+using System.Diagnostics;
 
 namespace JavaScriptInterpreter.Types
 {
@@ -535,33 +536,188 @@ namespace JavaScriptInterpreter.Types
         public string ReferenceName { get; set; }
         public bool StrictReference { get; set; }
     }
-    //public abstract class EnvironmentRecord
-    //{
-    //    /// <summary>
-    //    /// Определяет, имеет ли запись окружения привязку к индентификатору
-    //    /// </summary>
-    //    /// <param name="name">Текст индентификатора</param>
-    //    /// <returns></returns>
-    //    protected abstract bool hasBinding(string name)
-    //    {
-    //        return false;
-    //    }
-    //    /// <summary>
-    //    /// Создает в записи окружения новую изменяемую привязку.
-    //    /// </summary>
-    //    /// <param name="name">Привязанное имя</param>
-    //    /// <param name="delete">Привязка в последствии может быть удалена</param>
-    //    /// <returns></returns>
-    //    protected abstract bool createMutableBinding(string name, bool delete)
-    //    {
-    //        return false;
-    //    }
+    public abstract class Binding
+    {
+        protected object value;
+        public Binding(object value)
+        {
+           this.value = value;
+        }
+        public object Value { get; set; }
+    }
+    public class MutableBinding : Binding
+    {
+        protected bool canBeDeleted;
+
+        public MutableBinding(object value, bool canBeDeleted)
+            : base(value)
+        {
+            this.canBeDeleted = canBeDeleted;
+        }
+        public bool CanBeDeleted { get; set; }
+    }
+    public class ImmutableBinding : Binding
+    {
+        protected bool initialized;
+        public ImmutableBinding(object value)
+            : base(value)
+        {
+            this.initialized = false;
+        }
+        public bool Initialized { get; set; }
+    }
+    public abstract class EnvironmentRecord
+    {
+        /// <summary>
+        /// Определяет, имеет ли запись окружения привязку к индентификатору
+        /// </summary>
+        /// <param name="name">Текст индентификатора</param>
+        /// <returns></returns>
+        protected abstract bool hasBinding(string name);
         
-    //}
-    //public class DeclarativeEnviromentRecord : EnvironmentRecord
-    //{
+        /// <summary>
+        /// Создает в записи окружения новую изменяемую привязку.
+        /// </summary>
+        /// <param name="name">Привязанное имя</param>
+        /// <param name="delete">Привязка в последствии может быть удалена</param>
+        /// <returns></returns>
+        protected abstract void createMutableBinding(string name, bool delete);
         
-    //}
+        /// <summary>
+        /// Присваивает значение уже существующей в записи окружения изменяемой привязки
+        /// </summary>
+        /// <param name="name">Имя</param>
+        /// <param name="value">Значение</param>
+        /// <param name="s">Ссылка в сторогом режиме</param>
+        protected abstract void setMutableBinding(string name, object value, bool strict);
+
+        /// <summary>
+        /// Возврщает из записи окружения значение уже существующей привязки.
+        /// </summary>
+        /// <param name="name">Имя привязки</param>
+        /// <param name="strict">Ссылка в сторогом режиме</param>
+        protected abstract object getBindingValue(string name, bool strict);
+
+        /// <summary>
+        /// Удаляет привязку из записи окружения
+        /// </summary>
+        /// <param name="name">Имя</param>
+        protected abstract bool deleteBinding(string name);
+
+        /// <summary>
+        /// Возвращает значение, которое будет использоваться в качестве значения this при вызове 
+        /// объектов функции, получаемых в качестве значений привязки из этой записи окружения
+        /// </summary>
+        protected abstract object implicitThisValue();
+
+    }
+    public class DeclarativeEnviromentRecord : EnvironmentRecord
+    {
+        //protected HashSet<Reference> references; // привязки для индентификаторов в области видимости
+        protected Dictionary<string, Binding> bindings;
+        public DeclarativeEnviromentRecord()
+        {
+            bindings = new Dictionary<string, Binding>();
+        }
+        public override bool HasBinding(string name)
+        {
+            return bindings.ContainsKey(name);
+        }
+
+        public override void CreateMutableBinding(string name, bool canBeDeleted)
+        {
+            Debug.Assert(bindings.ContainsKey(name));
+            MutableBinding mutableBinding = new MutableBinding(EcmaTypes.UNDEFINED, canBeDeleted);
+            bindings[name] = mutableBinding;
+        }
+
+        public override void SetMutableBinding(string name, object value, bool strict)
+        {
+            Debug.Assert(!bindings.ContainsKey(name));
+            Binding binding = bindings[name];
+            if (binding is MutableBinding)
+            {
+                ((MutableBinding)binding).Value = value;
+            }
+            else
+            {
+                if (strict == true)
+                {
+                    throw new Exception("TypeError");
+                }
+            }
+        }
+
+        public override object GetBindingValue(string name, bool strict)
+        {
+            Debug.Assert(!bindings.ContainsKey(name));
+            Binding binding = bindings[name];
+            if (binding is ImmutableBinding && binding.Value.Equals(EcmaTypes.UNDEFINED))
+            {
+                if (strict == false)
+                {
+                    return EcmaTypes.UNDEFINED;
+                }
+                else
+                {
+                    throw new Exception("ReferenceError");
+                }
+            }
+            else
+            {
+                return bindings[name].Value;
+            }
+            
+        }
+
+        public override bool DeleteBinding(string name)
+        {
+            if (!bindings.ContainsKey(name))
+            {
+                return true;
+            }
+            else
+            {
+                Binding binding = bindings[name];
+                if (binding is MutableBinding)
+                {
+                    if (((MutableBinding)binding).CanBeDeleted == false)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        bindings.Remove(name);
+                        return true;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(true);
+                    return false;
+                }
+            }
+        }
+
+        public override object ImplicitThisValue()
+        {
+            return EcmaTypes.UNDEFINED;
+        }
+        public void CreateImmutableBinding(string name, bool canBeDeleted)
+        {
+            Debug.Assert(bindings.ContainsKey(name));
+            ImmutableBinding immutableBinding = new ImmutableBinding(EcmaTypes.UNDEFINED);
+            bindings[name] = immutableBinding;
+        }
+        public void InitializeImmutableBinding(string name, object value)
+        {
+            Debug.Assert(bindings.ContainsKey(name) && bindings[name] is ImmutableBinding && ((ImmutableBinding)bindings[name]).Initialized == false);
+            ImmutableBinding immutableBinding = (ImmutableBinding)bindings[name];
+            immutableBinding.Value = value;
+            immutableBinding.Initialized = true;
+
+        }
+    }
     //public class ObjectEnviromentRecord : EnvironmentRecord
     //{
 

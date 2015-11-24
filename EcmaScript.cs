@@ -9,20 +9,18 @@ namespace JavaScriptInterpreter
 {
     public static class EcmaScript
     {
-        public static ObjectType GlobalObject;
-        public static ObjectType Function;
-        public static ObjectType ObjectPrototype; // объект прототип
-
+        public static Stack<ExecutionContext> ExecutionContexts;
         public static void EnterInGlobalCode()
         {
-            // 15.1
-            GlobalObject = new ObjectType();
-            //GlobalObject.DefineOwnProperty("undefined", new DataDescriptor(UndefinedType.Value, false, false, false), false);
-            Function = new ObjectType();
-            ObjectPrototype = new ObjectType();
-            //ObjectPrototype.Put("__proto__", NullType.Value, false);
-            //ObjectPrototype.Put("__extensible__", new BooleanType(true), false);
-              
+            ObjectType globalObject = new ObjectType();
+            globalObject.InternalProperties["prototype"] = "object";
+            globalObject.InternalProperties["class"] = "global_object";
+            globalObject.DefineOwnProperty("global", new PropertyDescriptorType(globalObject, false, false, false), true);
+            LexicalEnvironment globalEnvironment = NewObjectEnvironment(globalObject, null);
+            ExecutionContext globalExceutionContext = new ExecutionContext(globalEnvironment, globalObject);
+            ExecutionContexts.Push(globalExceutionContext);
+            //ThisBinding = globalObject;
+            //http://es5.javascript.ru/x10.html#outer-environment-reference
         }
 
         public static bool SameValue(object x, object y)
@@ -104,7 +102,7 @@ namespace JavaScriptInterpreter
             }
             else
             {
-                
+                ((EnvironmentRecord)baseValue).GetBindingValue(GetReferenceName(val), IsStrictReference(val));
             }
             return null;
         }
@@ -154,15 +152,24 @@ namespace JavaScriptInterpreter
             return value.Equals(EcmaTypes.TRUE) || value.Equals(EcmaTypes.FALSE);
         }
         // ------------------------ Работа с лексическим окружением --------------------------------//
-        public static LexicalEnvironment NewDeclarativeEnvironment(LexicalEnvironment env)
+        public static LexicalEnvironment NewDeclarativeEnvironment(LexicalEnvironment outer)
         {
-            return new LexicalEnvironment(new DeclarativeEnviromentRecord(), env);
+            return new LexicalEnvironment(new DeclarativeEnviromentRecord(), outer);
         }
-        public static LexicalEnvironment NewObjectEnvironment(ObjectType obj, LexicalEnvironment env)
+        public static LexicalEnvironment NewObjectEnvironment(ObjectType obj, LexicalEnvironment outer)
         {
-            return new LexicalEnvironment(new ObjectEnviromentRecord(obj), env);
+            return new LexicalEnvironment(new ObjectEnviromentRecord(obj), outer);
+        }
+        
+    }
+    public struct ExecutionContext
+    {
+        public LexicalEnvironment Environment;
+        object ThisBinding;
+        public ExecutionContext(LexicalEnvironment env, object thisBinding)
+        {
+            this.Environment = env;
+            this.ThisBinding = thisBinding;
         }
     }
-    
-
 }

@@ -82,7 +82,7 @@ namespace JavaScriptInterpreter
         // Program = Elements
         private Node parseProgram()
         {
-            Node parseTree = new Node("program");
+            Node parseTree = new Node("input");
             List<Element> elements = parseElements();
             parseTree.AddChildren(elements);
             return parseTree;

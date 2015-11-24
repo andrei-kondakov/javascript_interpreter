@@ -95,6 +95,26 @@ namespace AST
             throw new NotImplementedException();
         }
     }
+    #region Statements
+    public class Statement : AstElement
+    {
+        public Statement(string label)
+            : base(label)
+        { }
+    }
+    public class Var : Statement
+    {
+        private string identifier;
+        private Expression value;
+
+        public Var(string identifier, Expression val):base("var")
+        {
+            this.identifier = identifier;
+            this.value = val;
+        }
+    }
+    #endregion
+
     #region Expressions
     public class Expression : AstElement
     {

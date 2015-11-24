@@ -83,26 +83,26 @@ namespace JavaScriptInterpreter
         private Node parseProgram()
         {
             Node parseTree = new Node("program");
-            List<AstElement> elements = parseElements();
+            List<Element> elements = parseElements();
             parseTree.AddChildren(elements);
             return parseTree;
         }
         // Elements = { Element }
-        private List<AstElement> parseElements()
+        private List<AST.Element> parseElements()
         {
-            List<AstElement> elements = new List<AstElement>();
+            List<AST.Element> elements = new List<AST.Element>();
             while (inFirstOfStatement() || checkReservedWord("function")) 
             {
-                Node element = parseElement();
+                AST.Element element = parseElement();
                 elements.Add(element);
             }
             return elements;
         }
         // Element = Statement
         //			    | FunctionDeclaration
-        private Node parseElement()
+        private AST.Element parseElement()
         {
-            Node element;
+            AST.Element element;
             if (inFirstOfStatement())
             {
                 element = parseStatement();
@@ -132,9 +132,9 @@ namespace JavaScriptInterpreter
             return functionDeclaration;
         }
         // FormalParameters = Identifier [ , FormalParameters ]
-        private List<AstElement> parseFormalParameters()
+        private List<Element> parseFormalParameters()
         {
-            List<AstElement> formalParameters = new List<AstElement>();
+            List<Element> formalParameters = new List<Element>();
             formalParameters.Add(parseToken(DomainTag.IDENT));
             while (checkTokenTag(DomainTag.COMMA))
             {
@@ -163,9 +163,9 @@ namespace JavaScriptInterpreter
         //				| ReturnStatement
         //              | SwitchStatement 
         //				| ContinueStatement
-        private Node parseStatement()
+        private AST.Element parseStatement()
         {
-            Node statement;
+            AST.Element statement;
             if (checkTokenTag(DomainTag.LBRACE))
             {
                 statement = parseBlock();
@@ -221,10 +221,10 @@ namespace JavaScriptInterpreter
         // Statements = Statement | Statements Statement
         // UPDATE: // Statements = Statement { Statement }
         // UPDATE2:  Statements = { Statement }
-        private List<AstElement> parseStatements()
+        private List<Element> parseStatements()
         {
-            List<AstElement> statements = new List<AstElement>();
-            Node statement;
+            List<Element> statements = new List<Element>();
+            AST.Element statement;
             while (inFirstOfStatement())
             {
                 statement = parseStatement();
@@ -234,46 +234,44 @@ namespace JavaScriptInterpreter
         }
         // Объявление переменной
         // VariableStatement = var VariableDeclarations ";"
-        private Node parseVariableStatement()
+        private AST.Var parseVariableStatement()
         {
-            Node variableStatement = new Node("Variable statement");
-            variableStatement.AddChild(parseReservedWord("var"));
-            variableStatement.AddChildren(parseVariableDeclarations());
-            variableStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+            parseReservedWord("var");
+            AST.Var variableStatement = new AST.Var(parseVariableDeclarations());
+            parseToken(DomainTag.SEMICOLON);
             return variableStatement;
         }
 
         // VariableDeclarations = VariableDeclaration { "," VariableDeclaration }
-        private List<AstElement> parseVariableDeclarations()
+        private List<AST.VarDeclaration> parseVariableDeclarations()
         {
-            List<AstElement> variableDeclarations = new List<AstElement>();
+            List<AST.VarDeclaration> variableDeclarations = new List<AST.VarDeclaration>();
             variableDeclarations.Add(parseVariableDeclartion());
             while (checkTokenTag(DomainTag.COMMA))
             {
-                variableDeclarations.Add(parseToken(DomainTag.COMMA));
+                parseToken(DomainTag.COMMA);
                 variableDeclarations.Add(parseVariableDeclartion());
             }
             return variableDeclarations;
         }
         // VariableDeclaration = Identifier [ Initialiser ]
-        private Node parseVariableDeclartion()
+        private AST.VarDeclaration parseVariableDeclartion()
         {
-            Node variableDeclaration = new Node("Variable declaration");
-            variableDeclaration.AddChild(parseToken(DomainTag.IDENT));
-
+            string name = ((IdentToken)sym).Name;
+            parseToken(DomainTag.IDENT);
+            AST.Identifier ident = new AST.Identifier(name);
+            AST.Expression val = null;
             if (checkTokenTag(DomainTag.EQUAL))   // Sym in first(Initialiser)
             {
-                variableDeclaration.AddChild(parseInitialiser());
+                val = parseInitialiser();
             }
-            return variableDeclaration;
+            return new AST.VarDeclaration(ident, val);
         }
         // Initialiser = "=" AssignmentExpression
-        private Node parseInitialiser()
+        private AST.Expression parseInitialiser()
         {
-            Node initialiser = new Node("Initialiser");
-            initialiser.AddChild(parseToken(DomainTag.EQUAL));
-            initialiser.AddChild(parseAssignmentExpression());
-            return initialiser;
+            parseToken(DomainTag.EQUAL);
+            return parseAssignmentExpression();
         }
 
         // Пустая строка
@@ -361,7 +359,10 @@ namespace JavaScriptInterpreter
                 {
                     iterationStatement.AddChild(parseReservedWord("var"));
                     // iterationStatement.AddChild(parseVariableStatement());
-                    iterationStatement.AddChildren(parseVariableDeclarations());
+
+                    throw new NotImplementedException();
+                    // TODO: внизу раскоментировать
+                    //iterationStatement.AddChildren(parseVariableDeclarations());
                 }
                 else
                 {
@@ -460,9 +461,9 @@ namespace JavaScriptInterpreter
         // CaseClauses = CaseClause | CaseClauses CaseClause
         // QUESTION CaseClauses = CaseClause { CaseClause }
         // CaseClausesOpt = { CaseClause }  // TODO
-        private List<AstElement> parseCaseClauses()
+        private List<Element> parseCaseClauses()
         {
-            List<AstElement> caseClauses = new List<AstElement>();
+            List<Element> caseClauses = new List<Element>();
             Node caseClause;
             do
             {

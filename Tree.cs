@@ -8,10 +8,10 @@ using System.IO;
 
 namespace AST
 {
-    public abstract class AstElement
+    public abstract class Element
     {
         protected object data;
-        public AstElement(object data)
+        public Element(object data)
         {
             this.data = data;
         }
@@ -28,19 +28,19 @@ namespace AST
             throw new NotImplementedException();
         }
     }
-    class Node : AstElement
+    class Node : Element
     {
-        private List<AstElement> children;
+        private List<Element> children;
         public Node(object data)
             : base(data)
         {
-            this.children = new List<AstElement>();
+            this.children = new List<Element>();
         }
-        public void AddChild(AstElement child)
+        public void AddChild(Element child)
         {
             this.children.Add(child);
         }
-        public void AddChildren(List<AstElement> children)
+        public void AddChildren(List<Element> children)
         {
             this.children.AddRange(children);
         }
@@ -68,7 +68,7 @@ namespace AST
         }
     }
 
-    class ArgumentList : AstElement
+    class ArgumentList : Element
     {
         private List<Expression> args;
         public ArgumentList(List<Expression> arguments)
@@ -96,7 +96,7 @@ namespace AST
         }
     }
     #region Statements
-    public class Statement : AstElement
+    public class Statement : Element
     {
         public Statement(string label)
             : base(label)
@@ -104,19 +104,60 @@ namespace AST
     }
     public class Var : Statement
     {
-        private string identifier;
-        private Expression value;
-
-        public Var(string identifier, Expression val):base("var")
+        private List<VarDeclaration> varDeclarations;   
+        public Var(List<VarDeclaration> varDeclarations)
+            : base("variable statement")
+        {
+            this.varDeclarations = varDeclarations;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            for (int i = 0; i < varDeclarations.Count - 1; i++)
+            {
+                result += varDeclarations[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            }
+            if (varDeclarations.Count > 0)
+            {
+                result += varDeclarations[varDeclarations.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+    }
+    public class VarDeclaration : Element
+    {
+        private AST.Identifier identifier;
+        private Expression val;
+        public VarDeclaration(AST.Identifier identifier, Expression val)
+            : base("variable declaration")
         {
             this.identifier = identifier;
-            this.value = val;
+            this.val = val;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            //return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
+            string result;
+            result = base.ToString(prefix, isTail);
+            if (val != null)
+            {
+                
+                result += identifier.ToString(prefix + (isTail ? "    " : "│   "), false);
+                result += val.ToString(prefix + (isTail ? "    " : "│   "), true);
+                
+            }
+            else
+            {
+                result += identifier.ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
         }
     }
     #endregion
 
     #region Expressions
-    public class Expression : AstElement
+    public class Expression : Element
     {
         public Expression(object data)
             : base(data)
@@ -180,7 +221,7 @@ namespace AST
             this.properties = properties;
         }
     }
-    public class ObjectProperty : AstElement
+    public class ObjectProperty : Element
     {
         string name;
         Expression value;

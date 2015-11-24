@@ -68,6 +68,8 @@ namespace JavaScriptInterpreter.Types
             internalProperties = new Dictionary<string, object>();
         }
 
+        public Dictionary<string, object> InternalProperties { get; set; }
+
         /* Внутренние методы каждого объекта */
 
         /// <summary>

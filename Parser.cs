@@ -63,7 +63,7 @@ namespace JavaScriptInterpreter
             }
             return node;
         }
-        public void Start()
+        public Node Start()
         {
             Node parseTree;
             //if (filePath != null) File.WriteAllText(filePath, string.Empty);
@@ -75,6 +75,7 @@ namespace JavaScriptInterpreter
             {
                 sw.WriteLine(parseTree.ToString());
             }
+            return parseTree;
             //string filePath = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
             //parseTree.print(filePath);
         }

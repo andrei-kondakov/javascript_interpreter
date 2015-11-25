@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
 using ES;
+using AST;
 
 namespace JavaScriptInterpreter
 {
@@ -104,12 +105,15 @@ namespace JavaScriptInterpreter
                             {
                                 if (debug)
                                 {
+                                    Console.WriteLine("-------------------------------------------------------------------------------");
                                     Console.WriteLine("--- Lexer result:");
                                     foreach (Token tkn in lexems)
                                     {
                                         Console.WriteLine(tkn.ToString());
                                     }
+                                  //  Console.WriteLine("-------------------------------------------------------------------------------");
                                 }
+                                /*
                                 using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
                                 using (StreamWriter sw = new StreamWriter(fs))
                                 {
@@ -118,9 +122,18 @@ namespace JavaScriptInterpreter
                                     //sw.WriteLine("################################## END ########################################");
                                     sw.WriteLine("############################## PARSE TREE #####################################");
                                 }
+                                */
                                 Parser parser = new Parser(lexems);
-                                parser.Start();
+                                AST.Node ast = parser.Start();
+                                if (debug)
+                                {
+                                    Console.WriteLine("-------------------------------------------------------------------------------");
+                                    Console.WriteLine("--- Parser result:");
+                                    Console.WriteLine(ast.ToString());
+                                 //   Console.WriteLine("-------------------------------------------------------------------------------");
+                                }
                                 lexems.Clear();
+                                ast.Execute();
                             }
                         }
                         catch (Exception ex)

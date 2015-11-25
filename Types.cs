@@ -5,16 +5,46 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Diagnostics;
+using JavaScriptInterpreter;
 
-namespace JavaScriptInterpreter.Types
-{
+namespace ES
+{   
     #region Language_types
-    public enum EcmaTypes
+    public abstract class LanguageType
+    { }
+    public class Undefined : LanguageType
     {
-        UNDEFINED,
-        NULL,
-        TRUE,
-        FALSE
+        static Undefined value = null;
+        private Undefined() { }
+        public static Undefined Value
+        {
+            get
+            {
+                if (value == null)
+                {
+                    value = new Undefined();
+                }
+                return value;
+            }
+        }
+        public override string ToString()
+        {
+            return "undefined";
+        }
+    }
+    public static class Null : LanguageType
+    {
+        public static object Value = null;
+    }
+    public static class Boolean : LanguageType
+    {
+        //public bool Value = false;
+        //public Boolean(bool value)
+        //{
+        //    this.Value = value;
+        //}
+        public static bool True = true;
+        public static bool False = false;
     }
     public enum DescriptorType
     {
@@ -22,36 +52,29 @@ namespace JavaScriptInterpreter.Types
         ACCESSOR,
         UNKNOWN
     }
-    public class NumberType
+    public class Number : LanguageType
     {
-        private double value;
+        public double Value;
         //private bool posInfinity;
         //private bool negInfinity;
         //private bool NaN;
-
-        public NumberType(double value)
+        // TODO:    подумать над реализацией специальных значений 
+        //          положительная бесконечность, отриц. бесконечность,
+        //          Not a Number (NaN)
+        public Number(double value)
         {
-            this.value = value;
-        }
-        public double Value
-        {
-            get
-            {
-                // TODO:    подумать над реализацией специальных значений 
-                //          положительная бесконечность, отриц. бесконечность,
-                //          Not a Number (NaN)
-
-                //if (!(posInfinity || negInfinity || NaN))
-                //{
-                return value;
-                //}
-                //return null;
-            }
-            set
-            { this.value = value; }
+            this.Value = value;
         }
     }
-    public class ObjectType
+    public class String : LanguageType
+    {
+        public string Value;
+        public String(string value)
+        {
+            this.Value = value;
+        }
+    }
+    public class Object : LanguageType
     {
         // QUESTION m.b. Dicitipnary<string, PropertyDescriptroType> ??!??
         private Dictionary<string, PropertyDescriptorType> namedProperties;   // ассоциирует имя со значением и набором булевых атрибутов
@@ -62,7 +85,7 @@ namespace JavaScriptInterpreter.Types
         private bool extensible; // Если true, к объекту могут быть добавлены собственные свойства*/
         /* ------------------------------------*/
 
-        public ObjectType()
+        public Object()
         {
             namedProperties = new Dictionary<string, PropertyDescriptorType>();
             internalProperties = new Dictionary<string, object>();
@@ -81,7 +104,7 @@ namespace JavaScriptInterpreter.Types
         private object getOwnProperty(string propertyName) // возвращает дескриптор свойства
         {
             if (!namedProperties.ContainsKey(propertyName))
-                return EcmaTypes.UNDEFINED;
+                return Undefined.Value;
             PropertyDescriptorType property, result;
             property = namedProperties[propertyName];
             if (EcmaScript.IsDataDescriptor(property))
@@ -109,19 +132,19 @@ namespace JavaScriptInterpreter.Types
         public object GetProperty(string propertyName) 
         {
             var property = getOwnProperty(propertyName);
-            if (!(property.Equals(EcmaTypes.UNDEFINED)))
+            if (!(property is Undefined))
             {
                 return property;
             }
             else
             {
                 var prototype = internalProperties["prototype"];
-                if (prototype.Equals(EcmaTypes.UNDEFINED))
+                if (property is Undefined)
                 {
-                    return EcmaTypes.UNDEFINED; 
+                    return Undefined.Value; 
                 }
                 // QUESTION?
-                return ((ObjectType)prototype).GetProperty(propertyName);
+                return ((ES.Object)prototype).GetProperty(propertyName);
             }
         }
 
@@ -134,7 +157,7 @@ namespace JavaScriptInterpreter.Types
         public object Get(string propertyName)   
         {
             var desc = GetProperty(propertyName);
-            if (desc.Equals(EcmaTypes.UNDEFINED)) return EcmaTypes.UNDEFINED;
+            if (desc is Undefined) return Undefined.Value;
             if (EcmaScript.IsDataDescriptor(desc))
             {
                 return ((PropertyDescriptorType)desc).Attributes["value"];
@@ -142,7 +165,7 @@ namespace JavaScriptInterpreter.Types
             else //if (EcmaScript.IsAcessorDescriptor(desc))
             {
                 var getter = ((PropertyDescriptorType)desc).Attributes["get"];
-                if (getter.Equals(EcmaTypes.UNDEFINED)) return EcmaTypes.UNDEFINED;
+                if (getter is Undefined) return Undefined.Value;
                 return null; // TODO: вызвать внутренний метод CALL для getter передавая О в качестве значения this и непередавая никаких аргументов
             }
         }
@@ -156,11 +179,11 @@ namespace JavaScriptInterpreter.Types
         private bool canPut(string propertyName)
         {
             var desc = getOwnProperty(propertyName);
-            if (!desc.Equals(EcmaTypes.UNDEFINED))
+            if (!(desc is Undefined))
             {
                 if (EcmaScript.IsAcessorDescriptor(desc))
                 {
-                    if (((PropertyDescriptorType)desc).Attributes["set"].Equals(EcmaTypes.UNDEFINED))
+                    if (((PropertyDescriptorType)desc).Attributes["set"] is Undefined)
                     {
                         return false;
                     }
@@ -175,18 +198,18 @@ namespace JavaScriptInterpreter.Types
                 }
             }
             var prototype = internalProperties["prototype"];
-            if (prototype.Equals(EcmaTypes.NULL))
+            if (prototype.Equals(ES.Null.Value))
             {
                 return (bool)internalProperties["extensible"];
             }
-            var inherited = ((ObjectType)prototype).GetProperty(propertyName);
-            if (inherited.Equals(EcmaTypes.UNDEFINED))
+            var inherited = ((ES.Object)prototype).GetProperty(propertyName);
+            if (inherited is Undefined)
             {
                 return (bool)internalProperties["extensible"];
             }
             if (EcmaScript.IsAcessorDescriptor(inherited))
             {
-                if (((PropertyDescriptorType)inherited).Attributes["set"].Equals(EcmaTypes.UNDEFINED))
+                if (((PropertyDescriptorType)inherited).Attributes["set"] is Undefined)
                 {
                     return false;
                 }
@@ -264,7 +287,7 @@ namespace JavaScriptInterpreter.Types
         public bool HasProperty(string propertyName)
         {
             var desc = GetProperty(propertyName);
-            if (desc.Equals(EcmaTypes.UNDEFINED)) return false;
+            if (desc is Undefined) return false;
             return true;
         }
        
@@ -277,7 +300,7 @@ namespace JavaScriptInterpreter.Types
         public bool Delete(string propertyName, bool needThrow)
         {
             var desc = getOwnProperty(propertyName);
-            if (desc.Equals(EcmaTypes.UNDEFINED)) return true;
+            if (desc is Undefined) return true;
             if ((bool)((PropertyDescriptorType)desc).Attributes["configurable"])
             {
                 namedProperties.Remove(propertyName);
@@ -317,12 +340,12 @@ namespace JavaScriptInterpreter.Types
         public bool DefineOwnProperty(string propertyName, PropertyDescriptorType descriptor, bool needThrow)
         {
             var current = getOwnProperty(propertyName);
-            if (current.Equals(EcmaTypes.UNDEFINED) && (bool)internalProperties["extensible"] == false)
+            if (current is Undefined && (bool)internalProperties["extensible"] == false)
             {
                 if (needThrow) throw new Exception("TypeError");
                 return false;
             }
-            if (current.Equals(EcmaTypes.UNDEFINED) && (bool)internalProperties["extensible"])
+            if (current is Undefined && (bool)internalProperties["extensible"])
             {
                 PropertyDescriptorType newDescriptor;
                 var enumerable = descriptor.Attributes["enumerable"];
@@ -511,7 +534,7 @@ namespace JavaScriptInterpreter.Types
                     }
                 case "value":
                     {
-                        Attributes["value"] = EcmaTypes.UNDEFINED;
+                        Attributes["value"] = Undefined.Value;
                         break;
                     }
                 case "writable":
@@ -521,12 +544,12 @@ namespace JavaScriptInterpreter.Types
                     }
                 case "get":
                     {
-                        Attributes["get"] = EcmaTypes.UNDEFINED;
+                        Attributes["get"] = Undefined.Value;
                         break;
                     }
                 case "set":
                     {
-                        Attributes["set"] = EcmaTypes.UNDEFINED;
+                        Attributes["set"] = Undefined.Value;
                         break;
                     }
                 default:
@@ -642,7 +665,7 @@ namespace JavaScriptInterpreter.Types
         public override void CreateMutableBinding(string name, bool canBeDeleted)
         {
             Debug.Assert(bindings.ContainsKey(name));
-            MutableBinding mutableBinding = new MutableBinding(EcmaTypes.UNDEFINED, canBeDeleted);
+            MutableBinding mutableBinding = new MutableBinding(Undefined.Value, canBeDeleted);
             bindings[name] = mutableBinding;
         }
 
@@ -667,11 +690,11 @@ namespace JavaScriptInterpreter.Types
         {
             Debug.Assert(!bindings.ContainsKey(name));
             Binding binding = bindings[name];
-            if (binding is ImmutableBinding && binding.Value.Equals(EcmaTypes.UNDEFINED))
+            if (binding is ImmutableBinding && binding.Value is Undefined)
             {
                 if (strict == false)
                 {
-                    return EcmaTypes.UNDEFINED;
+                    return Undefined.Value;
                 }
                 else
                 {
@@ -716,13 +739,13 @@ namespace JavaScriptInterpreter.Types
 
         public override object ImplicitThisValue()
         {
-            return EcmaTypes.UNDEFINED;
+            return Undefined.Value;
         }
 
         public void CreateImmutableBinding(string name, bool canBeDeleted)
         {
             Debug.Assert(bindings.ContainsKey(name));
-            ImmutableBinding immutableBinding = new ImmutableBinding(EcmaTypes.UNDEFINED);
+            ImmutableBinding immutableBinding = new ImmutableBinding(Undefined.Value);
             bindings[name] = immutableBinding;
         }
 
@@ -737,15 +760,15 @@ namespace JavaScriptInterpreter.Types
     }
     public class ObjectEnviromentRecord : EnvironmentRecord
     {
-        private ObjectType bindingObject; // объект привязки
+        private ES.Object bindingObject; // объект привязки
         private bool provideThis;
-        public ObjectEnviromentRecord(ObjectType bindingObject)
+        public ObjectEnviromentRecord(ES.Object bindingObject)
         {
             this.bindingObject = bindingObject;
             this.provideThis = false;
         }
 
-        public ObjectType BindingObject { get; set; }
+        public ES.Object BindingObject { get; set; }
 
         public override bool HasBinding(string name)
         {
@@ -755,7 +778,7 @@ namespace JavaScriptInterpreter.Types
         public override void CreateMutableBinding(string name, bool delete)
         {
             Debug.Assert(bindingObject.HasProperty(name));
-            bindingObject.DefineOwnProperty(name, new PropertyDescriptorType(EcmaTypes.UNDEFINED, true, true, delete), true);
+            bindingObject.DefineOwnProperty(name, new PropertyDescriptorType(Undefined.Value, true, true, delete), true);
         }
 
         public override void SetMutableBinding(string name, object value, bool strict)
@@ -770,7 +793,7 @@ namespace JavaScriptInterpreter.Types
             {
                 if (strict == false)
                 {
-                    return EcmaTypes.UNDEFINED;
+                    return Undefined.Value;
                 }
                 else
                 {
@@ -793,7 +816,7 @@ namespace JavaScriptInterpreter.Types
             }
             else
             {
-                return EcmaTypes.UNDEFINED;
+                return Undefined.Value;
             }
         }
     }
@@ -810,7 +833,7 @@ namespace JavaScriptInterpreter.Types
         {
             if (lex == null)
             {
-                return new Reference(EcmaTypes.UNDEFINED, name, strict);
+                return new Reference(Undefined.Value, name, strict);
             }
             bool exists = environmentRecord.HasBinding(name);
             if (exists)

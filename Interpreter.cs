@@ -5,20 +5,41 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Reflection;
+using ES;
 
 namespace JavaScriptInterpreter
 {
+    public struct ExecutionContext
+    {
+        public ES.LexicalEnvironment Environment;
+        object ThisBinding;
+        public ExecutionContext(ES.LexicalEnvironment env, object thisBinding)
+        {
+            this.Environment = env;
+            this.ThisBinding = thisBinding;
+        }
+    }
     public static class JSInterpreter
     {
         private static bool debug = true;
+        public static Stack<ExecutionContext> ExecutionContexts = new Stack<ExecutionContext>();
         public static void ShowErrorAndStop(Position pos, string text)
         {
-            throw new Exception(String.Format("Error: {0}", text));
+            throw new Exception(string.Format("Error: {0}", text));
         }
         public static void Start(string sourceCode)
         {
             Token token;
             Queue<Token> lexems = new Queue<Token>();
+            ES.Object globalObject = new ES.Object();
+            globalObject.InternalProperties["prototype"] = Undefined.Value;
+            globalObject.InternalProperties["class"] = "global_object";
+            globalObject.DefineOwnProperty("global", new PropertyDescriptor(globalObject, false, false, false), true);
+            ES.LexicalEnvironment globalEnvironment = LexicalEnvironment.NewObjectEnvironment(globalObject, null);
+            ExecutionContext globalExceutionContext = new ExecutionContext(globalEnvironment, globalObject);
+            ExecutionContexts.Push(globalExceutionContext);
+            //ThisBinding = globalObject;
+            //http://es5.javascript.ru/x10.html#outer-environment-reference
             try
             {   
                 string pathToParseTreeFile = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
@@ -123,6 +144,31 @@ namespace JavaScriptInterpreter
                     Console.ReadKey();
                 //}
             }
+        }
+        public static object GetValue(object v)
+        {
+            if (!(v is Reference)) return v;
+            Reference val = (Reference)v;
+            var baseValue = val.GetBase();
+            if (val.IsUnresolvableReference()) throw new Exception("ReferenceError");
+            if (val.IsPropertyReference())
+            {
+                throw new NotImplementedException();
+                if (val.HasPrimitiveBase() == false)
+                {
+                    // TODO http://es5.javascript.ru/x8.html#x8.7.1
+
+                }
+                else
+                {
+
+                }
+            }
+            else
+            {
+                ((EnvironmentRecord)baseValue).GetBindingValue(val.GetReferenceName(), val.IsStrictReference());
+            }
+            return null;
         }
     }
 }

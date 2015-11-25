@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using JavaScriptInterpreter.Types;
+using ES;
 
 namespace JavaScriptInterpreter
 {
@@ -12,7 +12,7 @@ namespace JavaScriptInterpreter
         public static Stack<ExecutionContext> ExecutionContexts;
         public static void EnterInGlobalCode()
         {
-            ObjectType globalObject = new ObjectType();
+            ES.Object globalObject = new ES.Object();
             globalObject.InternalProperties["prototype"] = "object";
             globalObject.InternalProperties["class"] = "global_object";
             globalObject.DefineOwnProperty("global", new PropertyDescriptorType(globalObject, false, false, false), true);
@@ -26,11 +26,11 @@ namespace JavaScriptInterpreter
         public static bool SameValue(object x, object y)
         {
             if (!x.GetType().Equals(y.GetType())) return false; // QUESTION TODO TEST
-            if (x.Equals(EcmaTypes.UNDEFINED)) return true;
-            if (x.Equals(EcmaTypes.NULL)) return true;
-            if (x is NumberType)
+            if (x.Equals(Undefined.Value)) return true;
+            if (x.Equals(ES.Null.Value)) return true;
+            if (x is ES.Number)
             {
-                return ((NumberType)x).Value == ((NumberType)y).Value;
+                return ((Number)x).Value == ((Number)y).Value;
             }
             if (x is string)
             {
@@ -39,8 +39,8 @@ namespace JavaScriptInterpreter
  
             if (IsBooleanType(x))
             {
-                if ((x.Equals(EcmaTypes.TRUE) && y.Equals(EcmaTypes.TRUE))
-                    || (x.Equals(EcmaTypes.FALSE) && y.Equals(EcmaTypes.FALSE)))
+                if ((x.Equals(ES.Boolean.True) && y.Equals(ES.Boolean.True))
+                    || (x.Equals(ES.Boolean.False) && y.Equals(ES.Boolean.False)))
                 {
                     return true;
                 }
@@ -71,15 +71,15 @@ namespace JavaScriptInterpreter
         public static bool HasPrimitiveBase(Reference v)
         {
             var baseValue = GetBase(v);
-            return IsBooleanType(baseValue) || baseValue is string || baseValue is NumberType;
+            return IsBooleanType(baseValue) || baseValue is ES.String || baseValue is ES.Number;
         }
         public static bool IsPropertyReference(Reference v)
         {
-            return GetBase(v) is ObjectType || EcmaScript.HasPrimitiveBase(v);
+            return GetBase(v) is ES.Object || EcmaScript.HasPrimitiveBase(v);
         }
         public static bool IsUnresolvableReference(Reference v)
         {
-            return GetBase(v).Equals(EcmaTypes.UNDEFINED);
+            return GetBase(v) is Undefined;
         }
         public static object GetValue(object v)
         {
@@ -109,7 +109,7 @@ namespace JavaScriptInterpreter
         // ------------------------ Работа с дексрипторами --------------------------------//
         public static bool IsDataDescriptor(object desc)
         {
-            if (desc.Equals(EcmaTypes.UNDEFINED))
+            if (desc is Undefined)
             {
                 return false;
             }
@@ -122,7 +122,7 @@ namespace JavaScriptInterpreter
         }
         public static bool IsAcessorDescriptor(object desc)
         {
-            if (desc.Equals(EcmaTypes.UNDEFINED))
+            if (desc is Undefined)
             {
                 return false;
             }
@@ -135,7 +135,7 @@ namespace JavaScriptInterpreter
         }
         public static bool IsGenericDescriptor(object desc)
         {
-            if (desc.Equals(EcmaTypes.UNDEFINED))
+            if (desc is Undefined)
             {
                 return false;
             }
@@ -149,7 +149,7 @@ namespace JavaScriptInterpreter
         }
         public static bool IsBooleanType(object value)
         {
-            return value.Equals(EcmaTypes.TRUE) || value.Equals(EcmaTypes.FALSE);
+            return value.Equals(ES.Boolean.True) || value.Equals(ES.Boolean.False);
         }
         // ------------------------ Работа с лексическим окружением --------------------------------//
         public static LexicalEnvironment NewDeclarativeEnvironment(LexicalEnvironment outer)

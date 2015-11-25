@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using JavaScriptInterpreter.Types;
+using ES;
 
 namespace JavaScriptInterpreter
 {
@@ -12,9 +12,9 @@ namespace JavaScriptInterpreter
     {
         public static object ToPrimitive(object input, string preferredType)
         {
-            if (input is ObjectType)
+            if (input is ES.Object)
             {
-                return ((ObjectType)input).DefaultValue(preferredType);
+                return ((ES.Object)input).DefaultValue(preferredType);
             }
             else
             {

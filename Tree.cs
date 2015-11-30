@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
 using System.IO;
+using JavaScriptInterpreter;
+using ES;
 
 namespace AST
 {
@@ -23,7 +25,7 @@ namespace AST
         {
             return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
         }
-        public virtual void Execute()
+        public virtual object Execute()
         {
             throw new NotImplementedException();
         }
@@ -62,9 +64,13 @@ namespace AST
             }
             return result;
         }
-        public override void Execute()
+        public override object Execute()
         {
-            throw new NotImplementedException();
+            foreach (Element child in children)
+            {
+                child.Execute();
+            }
+            return null;
         }
     }
 
@@ -90,7 +96,7 @@ namespace AST
             }
             return result;
         }
-        public override void Execute()
+        public override object Execute()
         {
             throw new NotImplementedException();
         }
@@ -124,12 +130,34 @@ namespace AST
             }
             return result;
         }
+        public override object Execute()
+        {
+            ExecutionContext activeContext = JSInterpreter.ExecutionContexts.Peek(); // берем активный контекст исполнения
+            EnvironmentRecord env = activeContext.Environment.EnvironmentRecord;
+            // TODO IN FUTURE: обрабатывать директиву Use strict 
+            // в данной реализации код все время не строгий
+            // также тут должна быть реализация на проверку eval код или нет
+            // на данный момент выполнения кода в eval() не реализовано
+            bool configurableBindings = false;
+            bool strict = false;
+            foreach (VarDeclaration varDeclaration in varDeclarations)
+            {
+                string identName = varDeclaration.IdentifierName;
+                bool varAlreadyDeclared = env.HasBinding(identName);
+                if (varAlreadyDeclared == false)
+                {
+                    env.CreateMutableBinding(identName, configurableBindings);
+                    env.SetMutableBinding(identName, Undefined.Value, strict);
+                }
+            }
+            return null;
+        }
     }
     public class VarDeclaration : Element
     {
-        private AST.Identifier identifier;
-        private Expression val;
-        public VarDeclaration(AST.Identifier identifier, Expression val)
+        public Identifier identifier;
+        public Expression val;
+        public VarDeclaration(Identifier identifier, Expression val)
             : base("variable declaration")
         {
             this.identifier = identifier;
@@ -153,6 +181,13 @@ namespace AST
             }
             return result;
         }
+        public string IdentifierName
+        {
+            get
+            {
+                return identifier.Name;
+            }
+        }
     }
     #endregion
 
@@ -167,6 +202,12 @@ namespace AST
     public class This : Expression
     {
         public This() : base("this") { }
+
+        public override object Execute()
+        {
+            ExecutionContext activeContext = JSInterpreter.ExecutionContexts.Peek();
+            return activeContext.ThisBinding;
+        }
     }
     public class Identifier : Expression
     {
@@ -175,6 +216,21 @@ namespace AST
             : base(name)
         {
             this.name = name;
+        }
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+        }
+        public override object Execute()
+        {
+            ExecutionContext activeContext = JSInterpreter.ExecutionContexts.Peek(); // берем активный контекст исполнения
+            LexicalEnvironment env = activeContext.Environment;
+            // TODO IN FUTURE: обрабатывать директиву Use strict 
+            bool strict = false;
+            return LexicalEnvironment.GetIdentifierReference(env, name, strict);
         }
     }
     #region Literals
@@ -186,6 +242,10 @@ namespace AST
         {
             this.value = value;
         }
+        public override object Execute()
+        {
+            return value;
+        }
     }
     public class String : Expression
     {
@@ -195,10 +255,19 @@ namespace AST
         {
             this.value = value;
         }
+        public override object Execute()
+        {
+            return value;
+        }
+
     }
     public class Null : Expression
     {
         public Null() : base("null") { }
+        public override object Execute()
+        {
+            return null;
+        }
     }
     public class Boolean : Expression
     {
@@ -207,6 +276,10 @@ namespace AST
             : base(value)
         {
             this.value = value;
+        }
+        public override object Execute()
+        {
+            return value;
         }
     }
     public class Object : Expression

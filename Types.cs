@@ -894,7 +894,7 @@ namespace ES
 
         public override void CreateMutableBinding(string name, bool delete)
         {
-            Debug.Assert(bindingObject.HasProperty(name));
+            Debug.Assert(!bindingObject.HasProperty(name));
             bindingObject.DefineOwnProperty(name, new PropertyDescriptor(Undefined.Value, true, true, delete), true);
         }
 
@@ -946,20 +946,18 @@ namespace ES
             this.environmentRecord = environmentRecord;
             this.outer = externalLexicalEnvironment;
         }
-        public object GetIdentifierReference(LexicalEnvironment lex, string name, bool strict)
+        public EnvironmentRecord EnvironmentRecord
         {
-            if (lex == null)
+            get
             {
-                return new Reference(Undefined.Value, name, strict);
+                return environmentRecord;
             }
-            bool exists = environmentRecord.HasBinding(name);
-            if (exists)
+        }
+        public LexicalEnvironment Outer
+        {
+            get
             {
-                return new Reference(environmentRecord, name, strict);
-            }
-            else
-            {
-                return GetIdentifierReference(outer, name, strict);
+                return outer;
             }
         }
         // ------------------------ Работа с лексическим окружением --------------------------------//
@@ -970,6 +968,22 @@ namespace ES
         public static LexicalEnvironment NewObjectEnvironment(ES.Object obj, LexicalEnvironment outer)
         {
             return new LexicalEnvironment(new ObjectEnviromentRecord(obj), outer);
+        }
+        public static object GetIdentifierReference(LexicalEnvironment lex, string name, bool strict)
+        {
+            if (lex == null)
+            {
+                return new Reference(Undefined.Value, name, strict);
+            }
+            bool exists = lex.environmentRecord.HasBinding(name);
+            if (exists)
+            {
+                return new Reference(lex.EnvironmentRecord, name, strict);
+            }
+            else
+            {
+                return GetIdentifierReference(lex.Outer, name, strict);
+            }
         }
     }
 

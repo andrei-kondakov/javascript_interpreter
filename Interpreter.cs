@@ -13,7 +13,7 @@ namespace JavaScriptInterpreter
     public struct ExecutionContext
     {
         public ES.LexicalEnvironment Environment;
-        object ThisBinding;
+        public object ThisBinding;
         public ExecutionContext(ES.LexicalEnvironment env, object thisBinding)
         {
             this.Environment = env;

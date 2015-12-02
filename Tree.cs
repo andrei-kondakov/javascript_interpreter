@@ -133,21 +133,39 @@ namespace AST
         public override object Execute()
         {
             ExecutionContext activeContext = JSInterpreter.ExecutionContexts.Peek(); // берем активный контекст исполнения
-            EnvironmentRecord env = activeContext.Environment.EnvironmentRecord;
+            EnvironmentRecord env = activeContext.Environment;
             // TODO IN FUTURE: обрабатывать директиву Use strict 
             // в данной реализации код все время не строгий
             // также тут должна быть реализация на проверку eval код или нет
             // на данный момент выполнения кода в eval() не реализовано
             bool configurableBindings = false;
-            bool strict = false;
+            //bool strict = false;
             foreach (VarDeclaration varDeclaration in varDeclarations)
             {
-                string identName = varDeclaration.IdentifierName;
-                bool varAlreadyDeclared = env.HasBinding(identName);
-                if (varAlreadyDeclared == false)
+
+                //string identName = varDeclaration.IdentifierName;
+                //bool varAlreadyDeclared = env.HasBinding(identName);
+                //if (varAlreadyDeclared == false)
+                //{
+                //    env.CreateMutableBinding(identName, configurableBindings);
+                //    env.SetMutableBinding(identName, Undefined.Value, strict);
+                //}
+
+                ES.Type lhs = (ES.Type)varDeclaration.lhs.Execute();
+                if (varDeclaration.rhs != null)
                 {
-                    env.CreateMutableBinding(identName, configurableBindings);
-                    env.SetMutableBinding(identName, Undefined.Value, strict);
+                    ES.Type rhs = (ES.Type)varDeclaration.rhs.Execute();
+                    LanguageType value = JSInterpreter.GetValue(rhs);
+                    JSInterpreter.PutValue(lhs, value);
+                }
+                else
+                {
+                    string identName = varDeclaration.lhs.Name;
+                    bool varAlreadyDeclared = env.HasBinding(identName);
+                    if (varAlreadyDeclared == false)
+                    {
+                        env.CreateMutableBinding(identName, configurableBindings);
+                    }
                 }
             }
             return null;
@@ -155,29 +173,29 @@ namespace AST
     }
     public class VarDeclaration : Element
     {
-        public Identifier identifier;
-        public Expression val;
-        public VarDeclaration(Identifier identifier, Expression val)
+        public Identifier lhs;
+        public Expression rhs;
+        public VarDeclaration(Identifier lhs, Expression rhs)
             : base("variable declaration")
         {
-            this.identifier = identifier;
-            this.val = val;
+            this.lhs = lhs;
+            this.rhs = rhs;
         }
         public override string ToString(string prefix, bool isTail)
         {
             //return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
             string result;
             result = base.ToString(prefix, isTail);
-            if (val != null)
+            if (rhs != null)
             {
                 
-                result += identifier.ToString(prefix + (isTail ? "    " : "│   "), false);
-                result += val.ToString(prefix + (isTail ? "    " : "│   "), true);
+                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), false);
+                result += rhs.ToString(prefix + (isTail ? "    " : "│   "), true);
                 
             }
             else
             {
-                result += identifier.ToString(prefix + (isTail ? "    " : "│   "), true);
+                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), true);
             }
             return result;
         }
@@ -185,10 +203,11 @@ namespace AST
         {
             get
             {
-                return identifier.Name;
+                return lhs.Name;
             }
         }
     }
+    
     #endregion
 
     #region Expressions
@@ -227,24 +246,24 @@ namespace AST
         public override object Execute()
         {
             ExecutionContext activeContext = JSInterpreter.ExecutionContexts.Peek(); // берем активный контекст исполнения
-            LexicalEnvironment env = activeContext.Environment;
+            EnvironmentRecord env = activeContext.Environment;
             // TODO IN FUTURE: обрабатывать директиву Use strict 
             bool strict = false;
-            return LexicalEnvironment.GetIdentifierReference(env, name, strict);
+            return JSInterpreter.GetIdentifierReference(env, name, strict);
         }
     }
     #region Literals
     public class Number : Expression
     {
-        private double value;
+        private ES.Number number;
         public Number(double value)
             : base(value)
         {
-            this.value = value;
+            this.number = new ES.Number(value);
         }
         public override object Execute()
         {
-            return value;
+            return number;
         }
     }
     public class String : Expression

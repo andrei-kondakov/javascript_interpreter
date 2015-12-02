@@ -12,9 +12,9 @@ namespace JavaScriptInterpreter
 {
     public struct ExecutionContext
     {
-        public ES.LexicalEnvironment Environment;
+        public ES.EnvironmentRecord Environment;
         public object ThisBinding;
-        public ExecutionContext(ES.LexicalEnvironment env, object thisBinding)
+        public ExecutionContext(ES.EnvironmentRecord env, object thisBinding)
         {
             this.Environment = env;
             this.ThisBinding = thisBinding;
@@ -24,6 +24,7 @@ namespace JavaScriptInterpreter
     {
         private static bool debug = true;
         public static Stack<ExecutionContext> ExecutionContexts = new Stack<ExecutionContext>();
+        private static ES.Object globalObject;
         public static void ShowErrorAndStop(Position pos, string text)
         {
             throw new Exception(string.Format("Error: {0}", text));
@@ -32,15 +33,18 @@ namespace JavaScriptInterpreter
         {
             Token token;
             Queue<Token> lexems = new Queue<Token>();
-            ES.Object globalObject = new ES.Object();
-            globalObject.InternalProperties["prototype"] = Undefined.Value;
+            globalObject = new ES.Object();
+            globalObject.InternalProperties["prototype"] = ES.Null.Value;
             globalObject.InternalProperties["class"] = "global_object";
-            globalObject.DefineOwnProperty("global", new PropertyDescriptor(globalObject, false, false, false), true);
-            ES.LexicalEnvironment globalEnvironment = LexicalEnvironment.NewObjectEnvironment(globalObject, null);
+            PropertyDescriptor globalDesc = new PropertyDescriptor();
+            globalDesc.Attributes["value"] = globalObject;
+            globalDesc.Attributes["writable"] = false;
+            globalDesc.Attributes["enumerable"] = false;
+            globalDesc.Attributes["configurable"] = false;
+            globalObject.DefineOwnProperty("global", globalDesc, true);
+            ES.EnvironmentRecord globalEnvironment = new ObjectEnviroment(globalObject, null);
             ExecutionContext globalExceutionContext = new ExecutionContext(globalEnvironment, globalObject);
             ExecutionContexts.Push(globalExceutionContext);
-            //ThisBinding = globalObject;
-            //http://es5.javascript.ru/x10.html#outer-environment-reference
             try
             {   
                 string pathToParseTreeFile = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
@@ -147,7 +151,14 @@ namespace JavaScriptInterpreter
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                if (debug)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+                else
+                {
+                    Console.WriteLine(ex);
+                }
             }
             finally
             {
@@ -158,30 +169,114 @@ namespace JavaScriptInterpreter
                 //}
             }
         }
-        public static object GetValue(object v)
+        public static LanguageType GetValue(ES.Type v)
         {
-            if (!(v is Reference)) return v;
+            if (!(v is Reference)) return (LanguageType)v;
             Reference val = (Reference)v;
             var baseValue = val.GetBase();
             if (val.IsUnresolvableReference()) throw new Exception("ReferenceError");
             if (val.IsPropertyReference())
             {
-                throw new NotImplementedException();
                 if (val.HasPrimitiveBase() == false)
                 {
                     // TODO http://es5.javascript.ru/x8.html#x8.7.1
-
+                    throw new NotImplementedException();
                 }
                 else
                 {
-
+                    return ((ES.Object)baseValue).Get(val.GetReferenceName());
                 }
             }
             else
             {
-                ((EnvironmentRecord)baseValue).GetBindingValue(val.GetReferenceName(), val.IsStrictReference());
+                return ((EnvironmentRecord)baseValue).GetBindingValue(val.GetReferenceName(), val.IsStrictReference());
             }
-            return null;
+        }
+        public static bool PutValue(ES.Type v, LanguageType w)
+        {
+            if (!(v is Reference)) throw new Exception("ReferenceError");
+            Reference val = (Reference)v;
+            var baseValue = val.GetBase();
+            if (val.IsUnresolvableReference())
+            {
+                if (val.IsStrictReference())
+                {
+                    throw new Exception("ReferenceError");
+                }
+                else
+                {
+                    return globalObject.Put(val.GetReferenceName(), w, val.IsStrictReference());
+                }
+            }
+            else if (val.IsPropertyReference())
+            {
+                if (!val.HasPrimitiveBase())
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    ES.Object obj = (ES.Object)baseValue;
+                    string propertyName = val.GetReferenceName();
+                    bool needThrow = val.IsStrictReference();
+                    return obj.Put(propertyName, w, needThrow);
+                //    if (obj.CanPut(propertyName) == false)
+                //    {
+                //        if (needThrow)
+                //        {
+                //            throw new Exception("TypeError");
+                //        }
+                //        else
+                //        {
+                //            return false;
+                //        }
+                //    }
+                //    PropertyDescriptor ownDesc = (PropertyDescriptor)obj.GetOwnProperty(propertyName);
+                //    if (PropertyDescriptor.IsDataDescriptor(ownDesc))
+                //    {
+                //        if (needThrow)
+                //        {
+                //            throw new Exception("TypeError");
+                //        }
+                //        else
+                //        {
+                //            return false;
+                //        }
+                //    }
+                //    PropertyDescriptor desc = (PropertyDescriptor)obj.GetProperty(propertyName);
+                //    if (PropertyDescriptor.IsAcessorDescriptor(desc))
+                //    {
+                //        throw new NotImplementedException();
+                //    }
+                //    else
+                //    {
+                //        if (needThrow) throw new Exception("TypeError");
+                //    }
+                //    return false;
+                }
+            }
+            else
+            {
+                ((EnvironmentRecord)baseValue).SetMutableBinding(val.GetReferenceName(), w, val.IsStrictReference());
+                return true;
+            }
+        }
+        // ------------------------ Работа с лексическим окружением --------------------------------//
+        public static object GetIdentifierReference(EnvironmentRecord lex, string name, bool strict)
+        {
+            if (lex == null)
+            {
+                return new Reference(Undefined.Value, name, strict);
+            }
+            bool exists = lex.HasBinding(name);
+            if (exists)
+            {
+                return new Reference(lex, name, strict);
+            }
+            else
+            {
+                return GetIdentifierReference(lex.Outer, name, strict);
+            }
         }
     }
 }

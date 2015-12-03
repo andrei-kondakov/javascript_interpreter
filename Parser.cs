@@ -239,7 +239,10 @@ namespace JavaScriptInterpreter
         {
             parseReservedWord("var");
             AST.Var variableStatement = new AST.Var(parseVariableDeclarations());
-            parseToken(DomainTag.SEMICOLON);
+            if (checkTokenTag(DomainTag.SEMICOLON))
+            {
+                parseToken(DomainTag.SEMICOLON);
+            }
             return variableStatement;
         }
 

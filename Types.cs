@@ -109,6 +109,10 @@ namespace ES
         {
             this.Value = value;
         }
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
     public class String : LanguageType
     {
@@ -116,6 +120,10 @@ namespace ES
         public String(string value)
         {
             this.Value = value;
+        }
+        public override string ToString()
+        {
+            return Value;
         }
     }
     public class Object : LanguageType
@@ -134,6 +142,18 @@ namespace ES
             namedProperties = new Dictionary<string, PropertyDescriptor>();
             InternalProperties = new Dictionary<string, object>();
             InternalProperties["extensible"] = true;
+        }
+        public override string ToString()
+        {
+            string result = base.ToString();
+            result += "{";
+            foreach (KeyValuePair<string, PropertyDescriptor> kvp in namedProperties)
+            {
+                result += kvp.Key + ": " + kvp.Value + ", ";
+            }
+            result = result.Remove(result.Length - 2);
+            result += "}";
+            return result;
         }
 
         /* Внутренние методы каждого объекта */
@@ -604,6 +624,23 @@ namespace ES
                 default:
                     throw new Exception("Error: Have not a default value for attribute: " + attribute);
             }
+        }
+        public override string ToString()
+        {
+            object value = Attributes["value"];
+            if (Attributes["value"] != null)
+            {
+                if (value is ES.Object)
+                {
+                    return base.ToString();
+                }
+                else
+                {
+                    return value.ToString();
+                }
+                
+            }
+            return base.ToString();
         }
         // ------------------------ Работа с дексрипторами --------------------------------//
         public static bool IsDataDescriptor(Type desc)

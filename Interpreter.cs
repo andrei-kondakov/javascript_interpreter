@@ -138,6 +138,12 @@ namespace JavaScriptInterpreter
                                 }
                                 lexems.Clear();
                                 ast.Execute();
+                                if (debug)
+                                {
+                                    Console.WriteLine("-------------------------------------------------------------------------------");
+                                    Console.WriteLine("--- Global object:");
+                                    Console.WriteLine(globalObject.ToString());
+                                }
                             }
                         }
                         catch (Exception ex)

@@ -268,11 +268,11 @@ namespace AST
     }
     public class String : Expression
     {
-        private string value;
+        private ES.String value;
         public String(string value)
             : base(value)
         {
-            this.value = value;
+            this.value = new ES.String(value);
         }
         public override object Execute()
         {

@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Reflection;
 using ES;
-using AST;
 
 namespace JavaScriptInterpreter
 {
@@ -46,7 +41,7 @@ namespace JavaScriptInterpreter
             ExecutionContext globalExceutionContext = new ExecutionContext(globalEnvironment, globalObject);
             ExecutionContexts.Push(globalExceutionContext);
             try
-            {   
+            {
                 string pathToParseTreeFile = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
                 File.WriteAllText(pathToParseTreeFile, string.Empty);
                 if (sourceCode != null)
@@ -115,7 +110,7 @@ namespace JavaScriptInterpreter
                                     {
                                         Console.WriteLine(tkn.ToString());
                                     }
-                                  //  Console.WriteLine("-------------------------------------------------------------------------------");
+                                    //  Console.WriteLine("-------------------------------------------------------------------------------");
                                 }
                                 /*
                                 using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
@@ -134,7 +129,7 @@ namespace JavaScriptInterpreter
                                     Console.WriteLine("-------------------------------------------------------------------------------");
                                     Console.WriteLine("--- Parser result:");
                                     Console.WriteLine(ast.ToString());
-                                 //   Console.WriteLine("-------------------------------------------------------------------------------");
+                                    //   Console.WriteLine("-------------------------------------------------------------------------------");
                                 }
                                 lexems.Clear();
                                 ast.Execute();
@@ -148,7 +143,14 @@ namespace JavaScriptInterpreter
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(ex.Message);
+                            if (debug)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
+                            else
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
                             lexems.Clear();
                         }
                     }
@@ -157,21 +159,14 @@ namespace JavaScriptInterpreter
             }
             catch (Exception ex)
             {
-                if (debug)
-                {
-                    Console.WriteLine(ex.ToString());
-                }
-                else
-                {
-                    Console.WriteLine(ex);
-                }
+                Console.WriteLine(ex);
             }
             finally
             {
                 //if (sourceCode != null)
-               // {
-                    Console.WriteLine("Press any key to continue");
-                    Console.ReadKey();
+                // {
+                Console.WriteLine("Press any key to continue");
+                Console.ReadKey();
                 //}
             }
         }

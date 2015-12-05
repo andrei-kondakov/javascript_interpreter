@@ -171,6 +171,14 @@ namespace AST
             return null;
         }
     }
+    public class ExpressionStatment : Statement
+    {
+        List<Expression> expressions;
+        public ExpressionStatment(List<Expression> expressions) : base("expression statement")
+        {
+            this.expressions = expressions;
+        }
+    }
     public class VarDeclaration : Element
     {
         public Identifier lhs;

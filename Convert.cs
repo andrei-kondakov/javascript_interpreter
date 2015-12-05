@@ -5,16 +5,17 @@ using System.Text;
 using System.Threading.Tasks;
 using ES;
 
-namespace JavaScriptInterpreter
+namespace ES
 {
     // ---------------------------- Преобразование типов ---------------------------//
     public static class Convert
     {
-        public static object ToPrimitive(object input, string preferredType)
+        public static ES.LanguageType ToPrimitive(ES.LanguageType input, string preferredType)
         {
             if (input is ES.Object)
             {
-                return ((ES.Object)input).DefaultValue(preferredType);
+                throw new NotImplementedException();
+                //return ((ES.Object)input).DefaultValue(preferredType);
             }
             else
             {
@@ -39,30 +40,31 @@ namespace JavaScriptInterpreter
         //    if (x is ObjectType) return new BooleanType(true);
         //    return new BooleanType(false);
         //}
-        //public static NumberType ToNumber(EcmaType x)
-        //{
+        public static ES.Number ToNumber(ES.LanguageType x)
+        {
 
-        //    if (x is UndefinedType) return null;// QUESTION/TODO: NaN???!??
-        //    if (x is NullType) return new NumberType(0);
-        //    if (x is BooleanType)
-        //    {
-        //        if (((BooleanType)x).Value) return new NumberType(1);
-        //        else return new NumberType(0);
-        //    }
-        //    if (x is NumberType) return (NumberType)x;
-        //    if (x is StringType)
-        //    {
-        //        string str = ((StringType)x).Value;
-        //        double number = System.Convert.ToDouble(str);
-        //        return new NumberType(number);
-        //    }
-        //    if (x is Object)
-        //    {
-        //        EcmaType primValue = ToPrimitive(x, "Number");
-        //        return ToNumber(primValue);
-        //    }
-        //    return null;
-        //}
+            if (x is ES.Undefined) return new ES.Number(Double.NaN);// QUESTION/TODO: NaN???!??
+            if (x is ES.Null) return new ES.Number(0);
+            if (x is ES.Boolean)
+            {
+                bool val = ((ES.Boolean)x).Value;
+                return new ES.Number(System.Convert.ToDouble(val));
+            }
+            if (x is ES.Number) return (ES.Number)x;
+            if (x is ES.String)
+            {
+                string str = ((ES.String)x).Value;
+                double number = double.Parse(str, System.Globalization.CultureInfo.InvariantCulture);
+                return new ES.Number(number);
+            }
+            if (x is Object)
+            {
+                throw new NotImplementedException();
+                //EcmaType primValue = ToPrimitive(x, "Number");
+                //return ToNumber(primValue);
+            }
+            return null;
+        }
         //public static StringType ToString(EcmaType x)
         //{
         //    if (x is UndefinedType) return new StringType("undefined");

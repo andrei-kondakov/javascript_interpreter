@@ -93,7 +93,8 @@ namespace JavaScriptInterpreter
                                     JSInterpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
                                 }
                             } while (cur.Cp != '\'');
-                            return new StringToken(Program.Substring(start.Index, cur.Index - start.Index + 1), start, ++cur);
+                            string str = Program.Substring(start.Index, cur.Index - start.Index + 1).Replace("'", "");
+                            return new StringToken(str, start, ++cur);
                         }
                     case '\"':
                         {
@@ -105,7 +106,8 @@ namespace JavaScriptInterpreter
                                     JSInterpreter.ShowErrorAndStop(cur, "missing the closing quotation mark");
                                 }
                             } while (cur.Cp != '\"');
-                            return new StringToken(Program.Substring(start.Index, cur.Index - start.Index + 1), start, ++cur);
+                            string str = Program.Substring(start.Index, cur.Index - start.Index + 1).Replace("\"", "");
+                            return new StringToken(str, start, ++cur);
                         }
                     case '(':
                         return new SpecToken(DomainTag.LPARENT, start, ++cur);
@@ -242,7 +244,7 @@ namespace JavaScriptInterpreter
                                 }
                                 catch (System.OverflowException)
                                 {
-                                    JSInterpreter.ShowErrorAndStop(cur, "int number is too large");
+                                    JSInterpreter.ShowErrorAndStop(cur, "dobule number is too large");
                                 }
                             }
                             break;

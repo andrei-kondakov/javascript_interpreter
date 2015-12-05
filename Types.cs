@@ -11,42 +11,42 @@ namespace ES
 {
     public static class EcmaTypes
     {
-        public static bool SameValue(object x, object y)
-        {
-            if (!x.GetType().Equals(y.GetType())) return false; // QUESTION TODO TEST
-            if (x.Equals(Undefined.Value)) return true;
-            if (x.Equals(ES.Null.Value)) return true;
-            if (x is ES.Number)
-            {
-                return ((Number)x).Value == ((Number)y).Value;
-            }
-            if (x is string)
-            {
-                return x.Equals(y);
-            }
+        //public static bool SameValue(object x, object y)
+        //{
+        //    if (!x.GetType().Equals(y.GetType())) return false; // QUESTION TODO TEST
+        //    if (x.Equals(Undefined.Value)) return true;
+        //    if (x.Equals(ES.Null.Value)) return true;
+        //    if (x is ES.Number)
+        //    {
+        //        return ((Number)x).Value == ((Number)y).Value;
+        //    }
+        //    if (x is string)
+        //    {
+        //        return x.Equals(y);
+        //    }
 
-            if (IsBooleanType(x))
-            {
-                if ((x.Equals(ES.Boolean.True) && y.Equals(ES.Boolean.True))
-                    || (x.Equals(ES.Boolean.False) && y.Equals(ES.Boolean.False)))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                // TODO: отнсоятся к одному и то му же объекту
-                return x.GetType().Equals(y.GetType());
-            }
-        }
-        public static bool IsBooleanType(object value)
-        {
-            return value.Equals(ES.Boolean.True) || value.Equals(ES.Boolean.False);
-        }
+        //    if (IsBooleanType(x))
+        //    {
+        //        if ((x.Equals(ES.Boolean.True) && y.Equals(ES.Boolean.True))
+        //            || (x.Equals(ES.Boolean.False) && y.Equals(ES.Boolean.False)))
+        //        {
+        //            return true;
+        //        }
+        //        else
+        //        {
+        //            return false;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // TODO: отнсоятся к одному и то му же объекту
+        //        return x.GetType().Equals(y.GetType());
+        //    }
+        //}
+        //public static bool IsBooleanType(object value)
+        //{
+        //    return value.Equals(ES.Boolean.True) || value.Equals(ES.Boolean.False);
+        //}
         
     }
     public abstract class Type { }
@@ -93,8 +93,13 @@ namespace ES
     }
     public class Boolean : LanguageType
     {
-        public static bool True = true;
-        public static bool False = false;
+        public bool Value;
+
+        public Boolean (bool value)
+        {
+            this.Value = value;
+        }
+
     }
         public class Number : LanguageType
     {
@@ -123,7 +128,7 @@ namespace ES
         }
         public override string ToString()
         {
-            return Value;
+            return "'" + Value + "'";
         }
     }
     public class Object : LanguageType
@@ -697,6 +702,23 @@ namespace ES
             this.referenceName = referenceName;
             this.strictReference = strictReference;
         }
+        public override string ToString()
+        {
+            var value = baseValue as LanguageType;
+            if (value != null)
+            {
+                return ES.Convert.ToPrimitive(value, null).ToString();
+            }
+            else
+            {
+                var objectEnvironment = baseValue as ObjectEnviroment;
+                if (objectEnvironment != null)
+                {
+                    return objectEnvironment.BindingObject.Get(referenceName).ToString();
+                }
+                return base.ToString();
+            }
+        }
 
         //public object BaseValue { get; set; }
         //public string ReferenceName { get; set; }
@@ -716,7 +738,7 @@ namespace ES
         }
         public bool HasPrimitiveBase()
         {
-            return EcmaTypes.IsBooleanType(baseValue) || baseValue is ES.String || baseValue is ES.Number;
+            return baseValue is ES.Boolean || baseValue is ES.String || baseValue is ES.Number;
         }
         public bool IsPropertyReference()
         {

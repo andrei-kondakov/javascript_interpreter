@@ -289,14 +289,17 @@ namespace JavaScriptInterpreter
 
         // Инструкция выражение
         // ExpressionStatement = (не начинается с {, function ) Expression ;
-        private Node parseExpressionStatement()
+        private ExpressionStatment parseExpressionStatement()
         {
-            Node expressionStatement = new Node("Expression statement");
+            ExpressionStatment expressionStatement=null;
             if (!checkTokenTag(DomainTag.LBRACE) && !checkReservedWord("function"))
             {
-                expressionStatement.AddChildren(parseExpression());
+                expressionStatement = new ExpressionStatment(parseExpression());
             }
-            expressionStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+            if (checkTokenTag(DomainTag.SEMICOLON))
+            {
+                parseToken(DomainTag.SEMICOLON);
+            }
             return expressionStatement;
         }
 

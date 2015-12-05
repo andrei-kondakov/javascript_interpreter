@@ -178,6 +178,34 @@ namespace AST
         {
             this.expressions = expressions;
         }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            for (int i = 0; i < expressions.Count - 1; i++)
+            {
+                result += expressions[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            }
+            if (expressions.Count > 0)
+            {
+                result += expressions[expressions.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public override object Execute()
+        {
+            for (int i = 0; i < expressions.Count - 1; i++)
+            {
+                expressions[i].Execute();
+            }
+            if (expressions.Count > 0)
+            {
+                object result = expressions[expressions.Count - 1].Execute();
+                Console.WriteLine(result);
+            }
+            return null;
+        }
+
     }
     public class VarDeclaration : Element
     {

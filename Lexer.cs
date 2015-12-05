@@ -226,9 +226,18 @@ namespace JavaScriptInterpreter
                                 {
                                     cur++;
                                 } while (cur.IsDecimalDigit);
+                                if (cur.Cp == '.')
+                                {
+                                    do
+                                    {
+                                        cur++;
+                                    } while (cur.IsDecimalDigit);
+                                }
                                 try
                                 {
-                                    Int64 number = System.Convert.ToInt64(Program.Substring(start.Index, cur.Index - start.Index));
+                                    string str = Program.Substring(start.Index, cur.Index - start.Index);
+                                    //double number = System.Convert.ToDouble(str);
+                                    double number = double.Parse(str, System.Globalization.CultureInfo.InvariantCulture);
                                     return new NumberToken(number, start, cur);
                                 }
                                 catch (System.OverflowException)

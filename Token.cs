@@ -37,9 +37,9 @@ namespace JavaScriptInterpreter
     }
     public class NumberToken : Token
     {
-        public readonly Int64 Value;
+        public readonly double Value;
 
-        public NumberToken(Int64 value, Position starting, Position following)
+        public NumberToken(double value, Position starting, Position following)
             : base(DomainTag.NUMBER, starting, following)
         {
             this.Value = value;

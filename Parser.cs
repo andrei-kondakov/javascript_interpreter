@@ -556,10 +556,11 @@ namespace JavaScriptInterpreter
             }
             else// if (checkTokenTag(DomainTag.LPARENT)){
             {
-                throw new NotImplementedException();
+                List<Expression> expressions;
                 parseToken(DomainTag.LPARENT);
-                parseExpression();
+                expressions = parseExpression();
                 parseToken(DomainTag.RPARENT);
+                return expressions[expressions.Count - 1];
             }
         }
         // Literal = NullLiteral 

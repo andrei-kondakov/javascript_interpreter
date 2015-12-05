@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections;
-using System.IO;
 using JavaScriptInterpreter;
 using ES;
 
@@ -551,12 +546,60 @@ namespace AST
         public Plus(Expression left, Expression right)
             : base("+", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            if (lprim is ES.String && rprim is ES.String) 
+            {
+                string val1, val2;
+                val1 = ((ES.String)lprim).Value;
+                val2 = ((ES.String)rprim).Value;
+                return new ES.String(val1 + val2);
+            }
+            else
+            {
+                var lhs = (ES.Convert.ToNumber(lprim)).Value;
+                var rhs = (ES.Convert.ToNumber(rprim)).Value;
+                if (double.IsNaN(lhs) || double.IsNaN(rhs))
+                {
+                    return new ES.Number(double.NaN);
+                }
+                else
+                {
+                    return new ES.Number(lhs + rhs);
+                }
+            }
+        }
     }
     class Minus : BinaryNode
     {
         public Minus(Expression left, Expression right)
             : base("-", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs - rhs);
+            }
+        }
     }
 
     #endregion

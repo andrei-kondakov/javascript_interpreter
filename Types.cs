@@ -11,6 +11,109 @@ namespace ES
 {
     public static class EcmaTypes
     {
+        public static ES.Boolean Equal(LanguageType lval, LanguageType rval)
+        {
+            if (lval.GetType().Equals(rval.GetType()))
+            {
+                if (lval is ES.Undefined)
+                {
+                    return new ES.Boolean(true);
+                }
+                if (lval is ES.Null)
+                {
+                    return new ES.Boolean(true);
+                }
+                if (lval is ES.Number)
+                {
+                    var x = lval as ES.Number;
+                    var y = rval as ES.Number;
+                    if (double.IsNaN(x.Value))
+                    {
+                        return new ES.Boolean(false);
+                    }
+                    if (double.IsNaN(y.Value))
+                    {
+                        return new ES.Boolean(false);
+                    }
+                    if (x.Value == y.Value)
+                    {
+                        return new ES.Boolean(true);
+                    }
+                    return new ES.Boolean(false);
+                }
+                if (lval is ES.String)
+                {
+                    var x = lval as ES.String;
+                    var y = rval as ES.String;
+                    return new ES.Boolean(x.Value.Equals(y.Value));
+                }
+                if (lval is ES.Boolean)
+                {
+                    var x = lval as ES.Boolean;
+                    var y = rval as ES.Boolean;
+                    return new ES.Boolean(x.Value == y.Value);
+                }
+                if (lval is ES.Object)
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            if (lval is ES.Null && rval is ES.Undefined) return new ES.Boolean(true);
+            if (lval is ES.Undefined && rval is ES.Null) return new ES.Boolean(true);
+            if (lval is ES.Number && rval is ES.String)
+            {
+                return EcmaTypes.Equal(lval, ES.Convert.ToNumber(rval));
+            }
+            if (lval is ES.String && rval is ES.Number)
+            {
+                return EcmaTypes.Equal(ES.Convert.ToNumber(lval), rval);
+            }
+            if (lval is ES.Boolean)
+            {
+                return EcmaTypes.Equal(ES.Convert.ToNumber(lval), rval);
+            }
+            if (rval is ES.Boolean)
+            {
+                return EcmaTypes.Equal(lval, ES.Convert.ToNumber(rval));
+            }
+            if ((lval is ES.String) || (lval is ES.Number) && rval is Object)
+            {
+                return EcmaTypes.Equal(lval, ES.Convert.ToPrimitive(rval, null));
+            }
+            if (lval is ES.Object && (rval is ES.String || rval is ES.Number))
+            {
+                return EcmaTypes.Equal(ES.Convert.ToPrimitive(lval, null), rval);
+            }
+            return new ES.Boolean(false);
+        }
+        public static ES.LanguageType Less(ES.LanguageType lval, ES.LanguageType rval, bool leftFirst)
+        {
+            ES.LanguageType x, y;
+            if (leftFirst == true)
+            {
+                x = ES.Convert.ToPrimitive(lval, "Number");
+                y = ES.Convert.ToPrimitive(rval, "Number");
+            }
+            else
+            {
+                y = ES.Convert.ToPrimitive(rval, "Number");
+                x = ES.Convert.ToPrimitive(lval, "Number");
+            }
+            if (!(x is ES.String && y is ES.String))
+            {
+                var nx = ES.Convert.ToNumber(x);
+                var ny = ES.Convert.ToNumber(y);
+                if (double.IsNaN(nx.Value)) return ES.Undefined.Value;
+                if (double.IsNaN(ny.Value)) return ES.Undefined.Value;
+                if (nx.Value == ny.Value) return new ES.Boolean(false);
+                return new ES.Boolean(nx.Value < ny.Value);
+            }
+            throw new NotImplementedException();
+            //var sx = ES.Convert.ToString(x);
+            //var sy = ES.Convert.ToString(y);
+            //return new ES.Boolean(sx.Value < sy.Value);
+        }
+        
         //public static bool SameValue(object x, object y)
         //{
         //    if (!x.GetType().Equals(y.GetType())) return false; // QUESTION TODO TEST

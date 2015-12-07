@@ -65,28 +65,42 @@ namespace ES
             }
             return null;
         }
-        //public static StringType ToString(EcmaType x)
-        //{
-        //    if (x is UndefinedType) return new StringType("undefined");
-        //    if (x is NullType) return new StringType("null");
-        //    if (x is BooleanType)
-        //    {
-        //        if (((BooleanType)x).Value) return new StringType("true");
-        //        else return new StringType("false");
-        //    }
-        //    if (x is NumberType)
-        //    {
-        //        // TODO NaN, +0, -0
-        //        double number = ((NumberType)x).Value;
-        //        return new StringType(number.ToString());
-        //    }
-        //    if (x is ObjectType)
-        //    {
-        //        EcmaType primValue = ToPrimitive(x, "String");
-        //        return ToString(primValue);
-        //    }
-        //    return null;
-        //}
+        public static ES.String ToString(ES.LanguageType x)
+        {
+            if (x is ES.Undefined)
+            {
+                return new ES.String("undefined");
+            }
+            if (x is ES.Null)
+            {
+                return new ES.String("null");
+            }
+            if (x is ES.Boolean)
+            {
+                return new ES.String(((ES.Boolean)x).Value.ToString());
+            }
+            if (x is ES.Number)
+            {
+                var number = x as ES.Number;
+                if (double.IsNaN(number.Value))
+                {
+                    return new ES.String("NaN");
+                }
+                else
+                {
+                    return new ES.String(number.Value.ToString());
+                }
+            }
+            if (x is ES.String)
+            {
+                return x as ES.String;
+            }
+            if (x is ES.Object)
+            {
+                throw new NotImplementedException();
+            }
+            return null;
+        }
         // TODO IsCallable
         // ToObject
     }

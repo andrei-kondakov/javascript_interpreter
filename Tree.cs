@@ -402,12 +402,59 @@ namespace AST
         public Increment(Expression node)
             : base("++", node)
         { }
+        public override object Execute()
+        {
+            var lhs = node.Execute();
+            if (lhs is ES.Reference && ((ES.Reference)lhs).IsStrictReference()
+                && ((ES.Reference)lhs).GetBase() is ES.EnvironmentRecord
+                && (((ES.Reference)lhs).GetReferenceName().Equals("eval")
+                || ((ES.Reference)lhs).GetReferenceName().Equals("arguments")))
+            {
+                throw new Exception("SyntaxError");
+            }
+            var oldValue = ES.Convert.ToNumber(JSInterpreter.GetValue((ES.Type)lhs));
+            ES.Number newValue;
+            if (double.IsNaN(oldValue.Value))
+            {
+                newValue = new ES.Number(double.NaN);
+            }
+            else
+            {
+                newValue = new ES.Number(oldValue.Value+1);
+            }
+            JSInterpreter.PutValue((ES.Type)lhs, newValue);
+            return oldValue;
+        }
+
     }
     public class Decrement : UnaryNode
     {
         public Decrement(Expression node)
             : base("--", node)
         { }
+        public override object Execute()
+        {
+            var lhs = node.Execute();
+            if (lhs is ES.Reference && ((ES.Reference)lhs).IsStrictReference()
+                && ((ES.Reference)lhs).GetBase() is ES.EnvironmentRecord
+                && (((ES.Reference)lhs).GetReferenceName().Equals("eval")
+                || ((ES.Reference)lhs).GetReferenceName().Equals("arguments")))
+            {
+                throw new Exception("SyntaxError");
+            }
+            var oldValue = ES.Convert.ToNumber(JSInterpreter.GetValue((ES.Type)lhs));
+            ES.Number newValue;
+            if (double.IsNaN(oldValue.Value))
+            {
+                newValue = new ES.Number(double.NaN);
+            }
+            else
+            {
+                newValue = new ES.Number(oldValue.Value - 1);
+            }
+            JSInterpreter.PutValue((ES.Type)lhs, newValue);
+            return oldValue;
+        }
     }
     public class NewExpr : UnaryNode
     {

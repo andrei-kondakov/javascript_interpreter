@@ -7,7 +7,7 @@ namespace AST
 {
     public abstract class Element
     {
-        protected object data;
+        public object data;
         public Element(object data)
         {
             this.data = data;
@@ -547,12 +547,56 @@ namespace AST
         public Lshift(Expression left, Expression right)
             : base("<<", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            var lhs_integer = System.Convert.ToInt32(lhs);
+            var rhs_integer = System.Convert.ToInt32(rhs);
+
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs_integer << rhs_integer);
+            }
+        }
     }
     public class Rshift : BinaryNode
     {
         public Rshift(Expression left, Expression right)
             : base(">>", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            var lhs_integer = System.Convert.ToInt32(lhs);
+            var rhs_integer = System.Convert.ToInt32(rhs);
+
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs_integer >> rhs_integer);
+            }
+        }
     }
     #endregion
 

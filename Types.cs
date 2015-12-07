@@ -596,13 +596,14 @@ namespace ES
             if (same) return true;
             if ((bool)((PropertyDescriptor)current).Attributes["configurable"] == false)
             {
-                if ((bool)descriptor.Attributes["configurable"])
+                if (descriptor.Attributes.ContainsKey("configurable") 
+                    && (bool)descriptor.Attributes["configurable"])
                 {
                     if (needThrow) throw new Exception("TypeError");
                     return false;
                 }
                 // Булево отрицание = просто неравенство двух значений?
-                if (descriptor.Attributes["enumerable"] != null
+                if (descriptor.Attributes.ContainsKey("enumerable") 
                     && ((PropertyDescriptor)current).Attributes["enumerable"] != descriptor.Attributes["enumerable"])
                 {
                     if (needThrow) throw new Exception("TypeError");

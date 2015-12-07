@@ -450,6 +450,22 @@ namespace AST
         public Assignment(string operation, Expression left, Expression right)
             : base(operation, left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            if (lref is Reference
+                && ((Reference)lref).IsStrictReference()
+                && ((Reference)lref).GetBase() is EnvironmentRecord
+                && (((Reference)lref).GetReferenceName() == "eval" ||
+                ((Reference)lref).GetReferenceName() == "arguments"))
+            {
+                throw new Exception("SyntaxError");
+            }
+            JSInterpreter.PutValue((ES.Type)lref, rval);
+            return null;
+        }
     }
     #endregion
 
@@ -554,11 +570,13 @@ namespace AST
             var rval = JSInterpreter.GetValue((ES.Type)rref);
             var lprim = ES.Convert.ToPrimitive(lval, null);
             var rprim = ES.Convert.ToPrimitive(rval, null);
-            if (lprim is ES.String && rprim is ES.String) 
+            if (lprim is ES.String || rprim is ES.String) 
             {
                 string val1, val2;
-                val1 = ((ES.String)lprim).Value;
-                val2 = ((ES.String)rprim).Value;
+                //val1 = ((ES.String)lprim).Value;
+                //val2 = ((ES.String)rprim).Value;
+                val1 = ES.Convert.ToString(lprim).Value;
+                val2 = ES.Convert.ToString(rprim).Value;
                 return new ES.String(val1 + val2);
             }
             else

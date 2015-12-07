@@ -166,6 +166,42 @@ namespace AST
             return null;
         }
     }
+    public class VarDeclaration : Element
+    {
+        public Identifier lhs;
+        public Expression rhs;
+        public VarDeclaration(Identifier lhs, Expression rhs)
+            : base("variable declaration")
+        {
+            this.lhs = lhs;
+            this.rhs = rhs;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            //return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
+            string result;
+            result = base.ToString(prefix, isTail);
+            if (rhs != null)
+            {
+
+                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), false);
+                result += rhs.ToString(prefix + (isTail ? "    " : "│   "), true);
+
+            }
+            else
+            {
+                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public string IdentifierName
+        {
+            get
+            {
+                return lhs.Name;
+            }
+        }
+    }
     public class ExpressionStatment : Statement
     {
         List<Expression> expressions;
@@ -201,42 +237,6 @@ namespace AST
             return null;
         }
 
-    }
-    public class VarDeclaration : Element
-    {
-        public Identifier lhs;
-        public Expression rhs;
-        public VarDeclaration(Identifier lhs, Expression rhs)
-            : base("variable declaration")
-        {
-            this.lhs = lhs;
-            this.rhs = rhs;
-        }
-        public override string ToString(string prefix, bool isTail)
-        {
-            //return prefix + (isTail ? "└── " : "├── ") + data.ToString() + Environment.NewLine;
-            string result;
-            result = base.ToString(prefix, isTail);
-            if (rhs != null)
-            {
-                
-                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), false);
-                result += rhs.ToString(prefix + (isTail ? "    " : "│   "), true);
-                
-            }
-            else
-            {
-                result += lhs.ToString(prefix + (isTail ? "    " : "│   "), true);
-            }
-            return result;
-        }
-        public string IdentifierName
-        {
-            get
-            {
-                return lhs.Name;
-            }
-        }
     }
     
     #endregion
@@ -321,11 +321,11 @@ namespace AST
     }
     public class Boolean : Expression
     {
-        private bool value;
+        private ES.Boolean value;
         public Boolean(bool value)
             : base(value)
         {
-            this.value = value;
+            this.value = new ES.Boolean(value);
         }
         public override object Execute()
         {

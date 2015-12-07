@@ -22,24 +22,6 @@ namespace ES
                 return input;
             }
         }
-        //public static BooleanType ToBoolean(EcmaType x)
-        //{
-        //    if (x is UndefinedType) return new BooleanType(false);
-        //    if (x is NullType) return new BooleanType(true);
-        //    if (x is BooleanType) return (BooleanType)x;
-        //    if (x is NumberType)
-        //    {
-        //        // TODO if +0, -0, NaN = false
-        //        return new BooleanType(System.Convert.ToBoolean(((NumberType)x).Value));
-        //    }
-        //    if (x is StringType)
-        //    {
-        //        if (((StringType)x).Value.Length == 0) return new BooleanType(false);
-        //        else return new BooleanType(true);
-        //    }
-        //    if (x is ObjectType) return new BooleanType(true);
-        //    return new BooleanType(false);
-        //}
         public static ES.Number ToNumber(ES.LanguageType x)
         {
 
@@ -98,6 +80,43 @@ namespace ES
             if (x is ES.Object)
             {
                 throw new NotImplementedException();
+            }
+            return null;
+        }
+        public static ES.Boolean ToBoolean(ES.LanguageType x)
+        {
+            if (x is ES.Undefined)
+            {
+                return new ES.Boolean(false);
+            }
+            if (x is ES.Null)
+            {
+                return new ES.Boolean(false);
+            }
+            if (x is ES.Boolean)
+            {
+                return x as ES.Boolean;
+            }
+            if (x is ES.Number)
+            {
+                var number = x as ES.Number;
+                return new ES.Boolean(System.Convert.ToBoolean(number.Value));
+            }
+            if (x is ES.String)
+            {
+                var str = x as ES.String;
+                if (str.Value.Length > 0)
+                {
+                    return new ES.Boolean(true);
+                }
+                else
+                {
+                    return new ES.Boolean(false);
+                }
+            }
+            if (x is ES.Object)
+            {
+                return new ES.Boolean(true);
             }
             return null;
         }

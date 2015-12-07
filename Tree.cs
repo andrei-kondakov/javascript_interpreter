@@ -470,53 +470,159 @@ namespace AST
     #endregion
 
     #region Logical Operations
-    public class LogicalOR : BinaryNode
-    {
-        public LogicalOR(Expression left, Expression right)
-            : base("||", left, right)
-        { }
-    }
     public class LogicalAND : BinaryNode
     {
         public LogicalAND(Expression left, Expression right)
             : base("&&", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var lvalBool = ES.Convert.ToBoolean(lval);
+            if (lvalBool.Value == false)
+            {
+                return lval;
+            }
+            var rref = right.Execute();
+            return JSInterpreter.GetValue((ES.Type)rref);
+        }
     }
+    public class LogicalOR : BinaryNode
+    {
+        public LogicalOR(Expression left, Expression right)
+            : base("||", left, right)
+        { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var lvalBool = ES.Convert.ToBoolean(lval);
+            if (lvalBool.Value == true)
+            {
+                return lval;
+            }
+            var rref = right.Execute();
+            return JSInterpreter.GetValue((ES.Type)rref);
+        }
+    }
+    
     public class LogicalEqual : BinaryNode
     {
         public LogicalEqual(Expression left, Expression right)
             : base("==", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            return EcmaTypes.Equal(rval, lval);
+        }
     }
     public class LogicalNotEqual : BinaryNode
     {
         public LogicalNotEqual(Expression left, Expression right)
             : base("!=", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            return  new ES.Boolean(!EcmaTypes.Equal(rval, lval).Value);
+        }
+
     }
     public class LogicalLess : BinaryNode
     {
         public LogicalLess(Expression left, Expression right)
             : base("<", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var result = EcmaTypes.Less(lval, rval, true);
+            if (result is Undefined)
+            {
+                return new ES.Boolean(false);
+            }
+            else
+            {
+                return result;
+            }
+        }
     }
     public class LogicalLarger : BinaryNode
     {
         public LogicalLarger(Expression left, Expression right)
             : base(">", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var result = EcmaTypes.Less(rval, lval, false);
+            if (result is ES.Undefined)
+            {
+                return new ES.Boolean(false);
+            }
+            else
+            {
+                return result;
+            }
+        }
     }
     public class LogicalLessOrEqual : BinaryNode
     {
         public LogicalLessOrEqual(Expression left, Expression right)
             : base("<=", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var result = EcmaTypes.Less(rval, lval, false);
+            if (result is ES.Undefined)
+            {
+                return new ES.Boolean(false);
+            }
+            else
+            {
+                return new ES.Boolean(!((ES.Boolean)result).Value);
+            }
+        }
     }
     public class LogicalLargerOrEqual : BinaryNode
     {
         public LogicalLargerOrEqual(Expression left, Expression right)
             : base(">=", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var result = EcmaTypes.Less(lval, rval, true);
+            if (result is ES.Undefined)
+            {
+                return new ES.Boolean(false);
+            }
+            else
+            {
+                return new ES.Boolean(!((ES.Boolean)result).Value);
+            }
+        }
     }
     #endregion
 
@@ -526,18 +632,84 @@ namespace AST
         public BitwiseOR(Expression left, Expression right)
             : base("|", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            var lnum = System.Convert.ToInt32(lhs);
+            var rnum = System.Convert.ToInt32(rhs);
+
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lnum | rnum);
+            }
+        }
     }
     public class BitwiseXOR : BinaryNode
     {
         public BitwiseXOR(Expression left, Expression right)
             : base("^", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            var lnum = System.Convert.ToInt32(lhs);
+            var rnum = System.Convert.ToInt32(rhs);
+
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lnum ^ rnum);
+            }
+        }
     }
     public class BitwiseAND : BinaryNode
     {
         public BitwiseAND(Expression left, Expression right)
             : base("&", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            var lnum = System.Convert.ToInt32(lhs);
+            var rnum = System.Convert.ToInt32(rhs);
+
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lnum & rnum);
+            }
+        }
     }
     #endregion
 

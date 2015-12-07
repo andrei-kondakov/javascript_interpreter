@@ -1054,7 +1054,7 @@ namespace JavaScriptInterpreter
             Expression logicalAndExpression = parseLogicalAndExpression();
             if (checkTokenTag(DomainTag.LOGICAL_OR))
             {
-                parseToken(DomainTag.OR);
+                parseToken(DomainTag.LOGICAL_OR);
                 return new LogicalOR(logicalAndExpression, parseLogicalOrExpression());
             }
             return logicalAndExpression;

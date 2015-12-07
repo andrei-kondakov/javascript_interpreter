@@ -610,12 +610,50 @@ namespace AST
         public Mul(Expression left, Expression right)
             : base("*", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs * rhs);
+            }
+        }
     }
     public class Div : BinaryNode
     {
         public Div(Expression left, Expression right)
             : base("/", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs / rhs);
+            }
+        }
     }
     // отстаток от деления
     public class Remainder : BinaryNode
@@ -623,6 +661,25 @@ namespace AST
         public Remainder(Expression left, Expression right)
             : base("%", left, right)
         { }
+        public override object Execute()
+        {
+            var lref = left.Execute();
+            var lval = JSInterpreter.GetValue((ES.Type)lref);
+            var rref = right.Execute();
+            var rval = JSInterpreter.GetValue((ES.Type)rref);
+            var lprim = ES.Convert.ToPrimitive(lval, null);
+            var rprim = ES.Convert.ToPrimitive(rval, null);
+            var lhs = (ES.Convert.ToNumber(lprim)).Value;
+            var rhs = (ES.Convert.ToNumber(rprim)).Value;
+            if (double.IsNaN(lhs) || double.IsNaN(rhs))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(lhs % rhs);
+            }
+        }
     }
     #endregion
 

@@ -255,6 +255,7 @@ namespace ES
             namedProperties = new Dictionary<string, PropertyDescriptor>();
             InternalProperties = new Dictionary<string, object>();
             InternalProperties["extensible"] = true;
+            InternalProperties["class"] = "Object";
         }
         public override string ToString()
         {

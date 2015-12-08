@@ -20,6 +20,7 @@ namespace JavaScriptInterpreter
         private static bool debug = true;
         public static Stack<ExecutionContext> ExecutionContexts = new Stack<ExecutionContext>();
         private static ES.Object globalObject;
+        public static ES.Object prototypeObject;
         public static void ShowErrorAndStop(Position pos, string text)
         {
             throw new Exception(string.Format("Error: {0}", text));
@@ -37,9 +38,19 @@ namespace JavaScriptInterpreter
             globalDesc.Attributes["enumerable"] = false;
             globalDesc.Attributes["configurable"] = false;
             globalObject.DefineOwnProperty("global", globalDesc, true);
+
             ES.EnvironmentRecord globalEnvironment = new ObjectEnviroment(globalObject, null);
             ExecutionContext globalExceutionContext = new ExecutionContext(globalEnvironment, globalObject);
             ExecutionContexts.Push(globalExceutionContext);
+
+            //Значение внутреннего свойства [[Prototype]] объекта-прототипа Object равно null
+            //Значение внутреннего свойства [[Class]] равно "Object"
+            //Tачальное значение внутреннего свойства [[Extensible]] равно true.
+
+            prototypeObject = new ES.Object();
+            globalObject.InternalProperties["prototype"] = ES.Null.Value;
+            globalObject.InternalProperties["class"] = "Object";
+
             try
             {
                 string pathToParseTreeFile = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory())), "parseTree.txt");
@@ -102,16 +113,16 @@ namespace JavaScriptInterpreter
                             indent = lexer.indent;
                             if (indent == 0)
                             {
-                                if (debug)
-                                {
-                                    Console.WriteLine("-------------------------------------------------------------------------------");
-                                    Console.WriteLine("--- Lexer result:");
-                                    foreach (Token tkn in lexems)
-                                    {
-                                        Console.WriteLine(tkn.ToString());
-                                    }
-                                    //  Console.WriteLine("-------------------------------------------------------------------------------");
-                                }
+                                //if (debug)
+                                //{
+                                //    Console.WriteLine("-------------------------------------------------------------------------------");
+                                //    Console.WriteLine("--- Lexer result:");
+                                //    foreach (Token tkn in lexems)
+                                //    {
+                                //        Console.WriteLine(tkn.ToString());
+                                //    }
+                                //    //  Console.WriteLine("-------------------------------------------------------------------------------");
+                                //}
                                 /*
                                 using (FileStream fs = new FileStream(pathToParseTreeFile, FileMode.Append, FileAccess.Write))
                                 using (StreamWriter sw = new StreamWriter(fs))
@@ -133,12 +144,12 @@ namespace JavaScriptInterpreter
                                 }
                                 lexems.Clear();
                                 ast.Execute();
-                                if (debug)
-                                {
-                                    Console.WriteLine("-------------------------------------------------------------------------------");
-                                    Console.WriteLine("--- Global object:");
-                                    Console.WriteLine(globalObject.ToString());
-                                }
+                                //if (debug)
+                                //{
+                                //    Console.WriteLine("-------------------------------------------------------------------------------");
+                                //    Console.WriteLine("--- Global object:");
+                                //    Console.WriteLine(globalObject.ToString());
+                                //}
                             }
                         }
                         catch (Exception ex)

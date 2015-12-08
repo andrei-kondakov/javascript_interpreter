@@ -452,31 +452,48 @@ namespace AST
         }
         public override object Execute()
         {
-            return base.Execute();
+            ES.Object obj = new ES.Object();
+            //globalObject = new ES.Object();
+            //globalObject.InternalProperties["prototype"] = ES.Null.Value;
+            //globalObject.InternalProperties["class"] = "global_object";
+
+            obj.InternalProperties["prototype"] = JSInterpreter.prototypeObject;
+            foreach (ObjectProperty property in properties)
+            {
+                string propertyName = property.Name;
+                var propertyDesc = (PropertyDescriptor)property.Execute();
+                obj.DefineOwnProperty(propertyName, propertyDesc, false);
+            }
+            return obj;
+                
         }
     }
     public class ObjectProperty : Element
     {
-        string name;
-        Expression value;
+        public string Name;
+        public Expression Value;
         public ObjectProperty(string name, Expression value)
             : base("property")
         {
-            this.name = name;
-            this.value = value;
+            this.Name = name;
+            this.Value = value;
         }
         public override string ToString(string prefix, bool isTail)
         {
             string result = base.ToString(prefix, isTail);
-            result += prefix + (isTail ? "    " : "│   ") + (isTail ? "└── " : "├── ") + name + Environment.NewLine;
-            result += value.ToString(prefix + (isTail ? "    " : "│   "), true);
-            //result += properties[i].ToString(prefix + (isTail ? "    " : "│   "), false);
-            //
-            //if (properties.Count > 0)
-            //{
-            //    result += properties[properties.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
-            //}
+            result += prefix + (isTail ? "    " : "│   ") + (isTail ? "└── " : "├── ") + Name + Environment.NewLine;
+            result += Value.ToString(prefix + (isTail ? "    " : "│   "), true);
             return result;
+        }
+        public override object Execute()
+        {
+            //Пусть desc будет Property Descriptor{[[Value]]: propValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}.
+            PropertyDescriptor desc = new PropertyDescriptor();
+            desc.Attributes["value"] = JSInterpreter.GetValue((ES.Type)Value.Execute());
+            desc.Attributes["writable"] = true;
+            desc.Attributes["enumerable"] = true;
+            desc.Attributes["configurable"] = true;
+            return desc;
         }
     }
     #endregion

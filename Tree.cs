@@ -63,7 +63,11 @@ namespace AST
         {
             foreach (Element child in children)
             {
-                child.Execute();
+                var res = child.Execute();
+                if (res != null)
+                {
+                    Console.WriteLine(res.ToString());
+                }
             }
             return null;
         }
@@ -202,6 +206,96 @@ namespace AST
             }
         }
     }
+    public class IfStatement : Statement
+    {
+        private Expression condition;
+        private Statement ifTrue;
+        private Statement ifFalse;
+        public IfStatement(Expression condition, Statement ifTrue, Statement ifFalse)
+            : base("if statement")
+        {
+            this.condition = condition;
+            this.ifTrue = ifTrue;
+            this.ifFalse = ifFalse;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            result += prefix + (isTail ? "    " : "│   ") + "condition" + Environment.NewLine;
+            result += condition.ToString(prefix + (isTail ? "    " : "│   "), false);
+            if (ifFalse != null)
+            {
+                result += prefix + (isTail ? "    " : "│   ") + "if_true" + Environment.NewLine;
+                result += ifTrue.ToString(prefix + (isTail ? "    " : "│   "), false);
+                result += prefix + (isTail ? "    " : "│   ") + "else" + Environment.NewLine;
+                result += ifFalse.ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            else
+            {
+                result += prefix + (isTail ? "    " : "│   ") + "if_true" + Environment.NewLine;
+                result += ifTrue.ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public override object Execute()
+        {
+            var exprRef = condition.Execute();
+            if (ES.Convert.ToBoolean(JSInterpreter.GetValue((ES.Type)exprRef)).Value)
+            {
+                return ifTrue.Execute();
+            }
+            else
+            {
+                if (ifFalse != null)
+                {
+                    return ifFalse.Execute();
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+    }
+    public class BlockStatement : Statement
+    {
+        List<Element> statements;
+        public BlockStatement(List<Element> statements)
+            : base("block statement")
+        {
+            this.statements = statements;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            for (int i = 0; i < statements.Count - 1; i++)
+            {
+                result += statements[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            }
+            if (statements.Count > 0)
+            {
+                result += statements[statements.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public override object Execute()
+        {
+            for (int i = 0; i < statements.Count - 1; i++)
+            {
+                statements[i].Execute();
+            }
+            if (statements.Count > 0)
+            {
+                object result = statements[statements.Count - 1].Execute();
+                Console.WriteLine(result);
+            }
+            return null;
+        }
+    }
+    
+        
     public class ExpressionStatment : Statement
     {
         List<Expression> expressions;
@@ -231,8 +325,7 @@ namespace AST
             }
             if (expressions.Count > 0)
             {
-                object result = expressions[expressions.Count - 1].Execute();
-                Console.WriteLine(result);
+                return expressions[expressions.Count - 1].Execute();
             }
             return null;
         }
@@ -511,7 +604,7 @@ namespace AST
                 throw new Exception("SyntaxError");
             }
             JSInterpreter.PutValue((ES.Type)lref, rval);
-            return null;
+            return rval;
         }
     }
     #endregion

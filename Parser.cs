@@ -211,13 +211,14 @@ namespace JavaScriptInterpreter
         }
         // Блоки
         // Block = "{" Statements "}"
-        private Node parseBlock()
+        private AST.BlockStatement parseBlock()
         {
-            Node block = new Node("Block");
-            block.AddChild(parseToken(DomainTag.LBRACE));
-            block.AddChildren(parseStatements());
-            block.AddChild(parseToken(DomainTag.RBRACE));
-            return block;
+
+            parseToken(DomainTag.LBRACE);
+            List<AST.Element> statements = parseStatements();
+            parseToken(DomainTag.RBRACE);
+
+            return new AST.BlockStatement(statements);
         }
         // Statements = Statement | Statements Statement
         // UPDATE: // Statements = Statement { Statement }
@@ -305,20 +306,21 @@ namespace JavaScriptInterpreter
 
         // Инструкция if
         // IfStatement = if "(" Expression ")" Statement [ else Statement ] 
-        private Node parseIfStatement()
+        private AST.IfStatement parseIfStatement()
         {
-            Node ifStatement = new Node("IF statement");
-            ifStatement.AddChild(parseReservedWord("if"));
-            ifStatement.AddChild(parseToken(DomainTag.LPARENT));
-            ifStatement.AddChildren(parseExpression());
-            ifStatement.AddChild(parseToken(DomainTag.RPARENT));
-            ifStatement.AddChild(parseStatement());
+            AST.Expression condition;
+            AST.Statement ifTrue, ifFalse=null;
+            parseReservedWord("if");
+            parseToken(DomainTag.LPARENT);
+            condition = parseExpression()[0];
+            parseToken(DomainTag.RPARENT);
+            ifTrue = (AST.Statement)parseStatement();
             if (checkReservedWord("else"))
             {
-                ifStatement.AddChild(parseReservedWord("else"));
-                ifStatement.AddChild(parseStatement());
+                parseReservedWord("else");
+                ifFalse = (AST.Statement)parseStatement();
             }
-            return ifStatement;
+            return new AST.IfStatement(condition, ifTrue, ifFalse);
         }
 
         // Инструкция циклы

@@ -619,15 +619,16 @@ namespace JavaScriptInterpreter
             return obj;
         }
         // PropertyNamesAndValues = { PropertyNamesAndValues "," } PropertyAssignment 
+        // PropertyNamesAndValues = PropertyAssignment { "," PropertyAssignment }
         private List<ObjectProperty> parsePropertyNamesAndValues()
         {
             List<ObjectProperty> propertyNamesAndValues = new List<ObjectProperty>();
-            while (inFirstOfPropertyNamesAndValues()) // sym in first(propertyNamesAndValues)
-            {
-                propertyNamesAndValues.AddRange(parsePropertyNamesAndValues());
-                parseToken(DomainTag.COMMA);
-            }
             propertyNamesAndValues.Add(parsePropertyAssignment());
+            while (checkTokenTag(DomainTag.COMMA)) // sym in first(propertyNamesAndValues)
+            {
+                parseToken(DomainTag.COMMA);
+                propertyNamesAndValues.Add(parsePropertyAssignment());
+            }
             return propertyNamesAndValues;
         }
         

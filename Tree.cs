@@ -436,16 +436,47 @@ namespace AST
         {
             this.properties = properties;
         }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            for (int i = 0; i < properties.Count - 1; i++)
+            {
+                result += properties[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            }
+            if (properties.Count > 0)
+            {
+                result += properties[properties.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public override object Execute()
+        {
+            return base.Execute();
+        }
     }
     public class ObjectProperty : Element
     {
         string name;
         Expression value;
         public ObjectProperty(string name, Expression value)
-            : base("obj_property")
+            : base("property")
         {
             this.name = name;
             this.value = value;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result = base.ToString(prefix, isTail);
+            result += prefix + (isTail ? "    " : "│   ") + (isTail ? "└── " : "├── ") + name + Environment.NewLine;
+            result += value.ToString(prefix + (isTail ? "    " : "│   "), true);
+            //result += properties[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            //
+            //if (properties.Count > 0)
+            //{
+            //    result += properties[properties.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            //}
+            return result;
         }
     }
     #endregion

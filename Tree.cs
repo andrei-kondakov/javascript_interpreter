@@ -289,13 +289,80 @@ namespace AST
             if (statements.Count > 0)
             {
                 object result = statements[statements.Count - 1].Execute();
-                Console.WriteLine(result);
+                //Console.WriteLine(result);
             }
             return null;
         }
     }
-    
+    public class WhileStatement : Statement
+    {
+        private Expression condition;
+        private Statement toDo;
+        public WhileStatement(Expression condition, Statement toDo) : base("while statemnt")
+        {
+            this.condition = condition;
+            this.toDo = toDo;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            result += prefix + (isTail ? "    " : "│   ") + "condition" + Environment.NewLine;
+            result += condition.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += prefix + (isTail ? "    " : "│   ") + "to do" + Environment.NewLine;
+            result += toDo.ToString(prefix + (isTail ? "    " : "│   "), true);
+            return result;
+        }
+        public override object Execute()
+        {
+            object stmt = null;
+
+            while (1 == 1)
+            {
+                var exprRef = condition.Execute();
+                if (ES.Convert.ToBoolean(JSInterpreter.GetValue((ES.Type)exprRef)).Value == false)
+                {
+                    return null;
+                }
+                stmt = toDo.Execute();
+            }
+        }
+    }
+    public class DoWhileStatement : Statement
+    {
+        private Statement toDo;
+        private Expression condition;
         
+        public DoWhileStatement(Statement toDo, Expression condition) : base("do-while statemnt")
+        {
+            this.toDo = toDo;
+            this.condition = condition;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            result += prefix + (isTail ? "    " : "│   ") + "to do" + Environment.NewLine;
+            result += toDo.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += prefix + (isTail ? "    " : "│   ") + "condition" + Environment.NewLine;
+            result += condition.ToString(prefix + (isTail ? "    " : "│   "), true);
+            return result;
+        }
+        public override object Execute()
+        {
+            object stmt = null;
+
+            while (1 == 1)
+            {
+                stmt = toDo.Execute();
+                var exprRef = condition.Execute();
+                if (ES.Convert.ToBoolean(JSInterpreter.GetValue((ES.Type)exprRef)).Value == false)
+                {
+                    return null;
+                }
+            }
+        }
+    }
     public class ExpressionStatment : Statement
     {
         List<Expression> expressions;

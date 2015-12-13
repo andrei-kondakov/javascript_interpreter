@@ -339,26 +339,31 @@ namespace JavaScriptInterpreter
         // IterationStatement = do Statement while "(" Expression ")" ";" 
         //						| while "(" Expression ")" Statement
         //                      | for "(" ( var VariableDeclarations | [Expression]) ";" [Expression] ";" [Expression] ) Statement 
-        private Node parseIterationStatement()
+        private AST.Statement parseIterationStatement()
         {
             Node iterationStatement = new Node("Iteration statement");
             if (checkReservedWord("do"))
             {
-                iterationStatement.AddChild(parseReservedWord("do"));
-                iterationStatement.AddChild(parseStatement());
-                iterationStatement.AddChild(parseReservedWord("while"));
-                iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
-                iterationStatement.AddChildren(parseExpression());
-                iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
-                iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+                parseReservedWord("do");
+                AST.Statement toDo = (AST.Statement)parseStatement();
+                parseReservedWord("while");
+                parseToken(DomainTag.LPARENT);
+                AST.Expression condition = parseExpression()[0];
+                parseToken(DomainTag.RPARENT);
+                if (checkTokenTag(DomainTag.SEMICOLON))
+                {
+                    parseToken(DomainTag.SEMICOLON);
+                }
+                return new AST.DoWhileStatement(toDo, condition);
             }
             else if (checkReservedWord("while"))
             {
-                iterationStatement.AddChild(parseReservedWord("while"));
-                iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
-                iterationStatement.AddChildren(parseExpression());
-                iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
-                iterationStatement.AddChild(parseStatement());
+                parseReservedWord("while");
+                parseToken(DomainTag.LPARENT);
+                AST.Expression condition = parseExpression()[0];
+                parseToken(DomainTag.RPARENT);
+                AST.Statement toDo = (AST.Statement)parseStatement();
+                return new AST.WhileStatement(condition, toDo);
             }
             else if (checkReservedWord("for"))
             {
@@ -394,7 +399,7 @@ namespace JavaScriptInterpreter
                 iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
                 iterationStatement.AddChild(parseStatement());
             }
-            return iterationStatement;
+            return null;
         }
         // Инструкция continue 
         // ContinueStatement = continue ";" | continue ( без перевода строки ) Identifier ; 

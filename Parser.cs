@@ -290,12 +290,12 @@ namespace JavaScriptInterpreter
 
         // Инструкция выражение
         // ExpressionStatement = (не начинается с {, function ) Expression ;
-        private ExpressionStatment parseExpressionStatement()
+        private ExpressionStatement parseExpressionStatement()
         {
-            ExpressionStatment expressionStatement=null;
+            ExpressionStatement expressionStatement=null;
             if (!checkTokenTag(DomainTag.LBRACE) && !checkReservedWord("function"))
             {
-                expressionStatement = new ExpressionStatment(parseExpression());
+                expressionStatement = new ExpressionStatement(parseExpression());
             }
             if (checkTokenTag(DomainTag.SEMICOLON))
             {
@@ -365,41 +365,38 @@ namespace JavaScriptInterpreter
                 AST.Statement toDo = (AST.Statement)parseStatement();
                 return new AST.WhileStatement(condition, toDo);
             }
-            else if (checkReservedWord("for"))
+            else //if (checkReservedWord("for"))
             {
-                iterationStatement.AddChild(parseReservedWord("for"));
-                iterationStatement.AddChild(parseToken(DomainTag.LPARENT));
+                parseReservedWord("for");
+                parseToken(DomainTag.LPARENT);
+                Statement initExpression=null;
                 if (checkReservedWord("var"))
                 {
-                    iterationStatement.AddChild(parseReservedWord("var"));
-                    // iterationStatement.AddChild(parseVariableStatement());
-
-                    throw new NotImplementedException();
-                    // TODO: внизу раскоментировать
-                    //iterationStatement.AddChildren(parseVariableDeclarations());
+                    initExpression = parseVariableStatement();
                 }
                 else
                 {
-                    if (inFirstOfExpression())  // sym in first(expression)
+                    if (inFirstOfExpressionStatement())  // sym in first(expression)
                     {
-                        iterationStatement.AddChildren(parseExpression());
+                        initExpression = parseExpressionStatement();
                     }
-
                 }
-                iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
+                //parseToken(DomainTag.SEMICOLON);
+                Expression condition = null;
                 if (inFirstOfExpression())  // sym in first(expression)
                 {
-                    iterationStatement.AddChildren(parseExpression());
+                    condition = parseExpression()[0];
                 }
-                iterationStatement.AddChild(parseToken(DomainTag.SEMICOLON));
-                if (inFirstOfExpression())  // sym in first(expression)
+                parseToken(DomainTag.SEMICOLON);
+                Statement stepExpression = null;
+                if (inFirstOfExpressionStatement())  // sym in first(expression)
                 {
-                    iterationStatement.AddChildren(parseExpression());
+                    stepExpression = parseExpressionStatement();
                 }
-                iterationStatement.AddChild(parseToken(DomainTag.RPARENT));
-                iterationStatement.AddChild(parseStatement());
+                parseToken(DomainTag.RPARENT);
+                Statement toDo = (AST.Statement)parseStatement();
+                return new AST.ForLoopStatement(initExpression, condition, stepExpression, toDo);
             }
-            return null;
         }
         // Инструкция continue 
         // ContinueStatement = continue ";" | continue ( без перевода строки ) Identifier ; 

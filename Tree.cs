@@ -363,10 +363,59 @@ namespace AST
             }
         }
     }
-    public class ExpressionStatment : Statement
+    public class ForLoopStatement : Statement
+    {
+        private Statement initExpressions;
+        private Expression condition;
+        private Statement stepExpressions;
+        private Statement toDo;
+        public ForLoopStatement(Statement initExpressions, Expression condition, Statement stepExpressions, Statement toDo)
+            : base("for-loop statement")
+        {
+            this.initExpressions = initExpressions;
+            this.condition = condition;
+            this.stepExpressions = stepExpressions;
+            this.toDo = toDo;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            result += prefix + (isTail ? "    " : "│   ") + "initial expressions" + Environment.NewLine;
+            result += initExpressions.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += prefix + (isTail ? "    " : "│   ") + "condition" + Environment.NewLine;
+            result += condition.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += prefix + (isTail ? "    " : "│   ") + "steps expressions" + Environment.NewLine;
+            result += stepExpressions.ToString(prefix + (isTail ? "    " : "│   "), false);
+            result += prefix + (isTail ? "    " : "│   ") + "to do" + Environment.NewLine;
+            result += toDo.ToString(prefix + (isTail ? "    " : "│   "), true);
+            return result;
+        }
+        public override object Execute()
+        {
+            if (initExpressions != null)
+            {
+                initExpressions.Execute();
+            }
+            while (1 == 1)
+            {
+                var testExprRef = condition.Execute();
+                if (ES.Convert.ToBoolean(JSInterpreter.GetValue((ES.Type)testExprRef)).Value == false)
+                {
+                    return null;
+                }
+                toDo.Execute();
+                if (stepExpressions != null)
+                {
+                    stepExpressions.Execute();
+                }
+            }
+        }
+    }
+    public class ExpressionStatement : Statement
     {
         List<Expression> expressions;
-        public ExpressionStatment(List<Expression> expressions) : base("expression statement")
+        public ExpressionStatement(List<Expression> expressions) : base("expression statement")
         {
             this.expressions = expressions;
         }

@@ -528,9 +528,9 @@ namespace JavaScriptInterpreter
             functionExpression.AddChild(parseToken(DomainTag.RBRACE));
             return null;
         }
-         //FormalParameters = Identifier | FormalParameters , Identifier
-         //QUESTION? FormalParameters = Identifier { , Identifier }
-        
+        //FormalParameters = Identifier | FormalParameters , Identifier
+        //QUESTION? FormalParameters = Identifier { , Identifier }
+
 
         // --------------------------------------Выражения ---------------------------------------//
         // Первичные выражения
@@ -538,6 +538,7 @@ namespace JavaScriptInterpreter
         // PrimaryExpression = this 
         //						| Identifier 
         //						| Literal
+        //                      | ArrayLiteral
         //						| ObjectLiteral
         //						| "(" Expression ")"
         private Expression parsePrimaryExpression()
@@ -556,6 +557,23 @@ namespace JavaScriptInterpreter
             else if (inFirstOfLiteral())
             {
                 return parseLiteral();
+            }
+            else if (checkTokenTag(DomainTag.LSBRACKET))
+            {
+                parseToken(DomainTag.LSBRACKET);
+                List<Expression> elements = new List<Expression>();
+                if (inFirstOfAssignmentExpression())
+                {
+
+                    elements.Add(parseAdditiveExpression());
+                    while (checkTokenTag(DomainTag.COMMA))
+                    {
+                        parseToken(DomainTag.COMMA);
+                        elements.Add(parseAdditiveExpression());
+                    }
+                }
+                parseToken(DomainTag.RSBRACKET);
+                return new AST.Array(elements);
             }
             else if (inFirstOfObjectLiteral())
             {

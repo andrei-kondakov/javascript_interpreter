@@ -239,6 +239,15 @@ namespace ES
             return "'" + Value + "'";
         }
     }
+    public class Array : Object
+    {
+
+        public Array() : base()
+        {
+            InternalProperties["class"] = "Array";
+            InternalProperties["prototype"] = ES.Null.Value;
+        }
+    }
     public class Object : LanguageType
     {
         // QUESTION m.b. Dicitipnary<string, PropertyDescriptroType> ??!??

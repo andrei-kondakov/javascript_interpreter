@@ -37,7 +37,7 @@ namespace JavaScriptInterpreter
         private bool inFirstOfPrimaryExpression()
         {
             return checkReservedWord("this") || checkTokenTag(DomainTag.IDENT) ||
-                 inFirstOfLiteral() || checkTokenTag(DomainTag.LBRACE) || checkTokenTag(DomainTag.LPARENT);
+                 inFirstOfLiteral() || checkTokenTag(DomainTag.LBRACE) || checkTokenTag(DomainTag.LPARENT) || checkTokenTag(DomainTag.LSBRACKET);
         }
         // sym in FIRST[PropertyAssignmnet]
         private bool inFirstOfPropertyAssignmnet()

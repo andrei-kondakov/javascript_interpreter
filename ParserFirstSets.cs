@@ -72,7 +72,7 @@ namespace JavaScriptInterpreter
         {
             return inFirstOfMemberExpression() || checkTokenTag(DomainTag.PLUS)
                 || checkTokenTag(DomainTag.MINUS) || checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT)
-                || checkReservedWord("new") || checkReservedWord("delete");
+                || checkReservedWord("new") || checkReservedWord("delete") || checkTokenTag(DomainTag.LOGICAL_NOT);
         }
         // sym in FIRST[MultiplicativeExpression] 
         private bool inFirstOfMultiplicativeExpression()

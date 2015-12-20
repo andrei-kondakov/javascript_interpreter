@@ -654,6 +654,17 @@ namespace AST
             return result;
         }
     }
+    public class LogicalNOT : UnaryNode
+    {
+        public LogicalNOT(Expression node) : base("!", node)
+        { }
+        public override object Execute()
+        {
+            var expr = node.Execute();
+            var oldValue = ES.Convert.ToBoolean(JSInterpreter.GetValue((ES.Type)expr));
+            return !oldValue.Value;
+        }
+    }
     public class Increment : UnaryNode
     {
         public Increment(Expression node)

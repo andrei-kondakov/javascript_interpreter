@@ -48,8 +48,8 @@ namespace JavaScriptInterpreter
             //Tачальное значение внутреннего свойства [[Extensible]] равно true.
 
             prototypeObject = new ES.Object();
-            globalObject.InternalProperties["prototype"] = ES.Null.Value;
-            globalObject.InternalProperties["class"] = "Object";
+            prototypeObject.InternalProperties["prototype"] = ES.Null.Value;
+            prototypeObject.InternalProperties["class"] = "Object";
 
             try
             {

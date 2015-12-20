@@ -791,6 +791,7 @@ namespace JavaScriptInterpreter
         // UnaryExpression = MemberExpression [( "++" | "--" )]
         //						| ( "+" | "-" ) UnaryExpression
         //						| ( "++" | "--" ) MemberExpression
+        //                      | "!" UnaryExpression
         //						| new ConstructorExpression
         //						| delete MemberExpression
         private Expression parseUnaryExpression()
@@ -816,40 +817,45 @@ namespace JavaScriptInterpreter
             else if (checkTokenTag(DomainTag.PLUS) || checkTokenTag(DomainTag.MINUS))
             {
                 throw new NotImplementedException();
-                if (checkTokenTag(DomainTag.PLUS))
-                {
-                    parseToken(DomainTag.PLUS);
-                }
-                else
-                {
-                    parseToken(DomainTag.MINUS);
-                }
-                parseUnaryExpression();
+                //if (checkTokenTag(DomainTag.PLUS))
+                //{
+                //    parseToken(DomainTag.PLUS);
+                //}
+                //else
+                //{
+                //    parseToken(DomainTag.MINUS);
+                //}
+                //parseUnaryExpression();
             }
             else if (checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT))
             {
                 throw new NotImplementedException();
-                if (checkTokenTag(DomainTag.INCREMENT))
-                {
-                    parseToken(DomainTag.INCREMENT);
-                }
-                else
-                {
-                    parseToken(DomainTag.DECREMENT);
-                }
-                parseMemberExpression();
+                //if (checkTokenTag(DomainTag.INCREMENT))
+                //{
+                //    parseToken(DomainTag.INCREMENT);
+                //}
+                //else
+                //{
+                //    parseToken(DomainTag.DECREMENT);
+                //}
+                //parseMemberExpression();
+            }
+            else if (checkTokenTag(DomainTag.LOGICAL_NOT))
+            {
+                parseToken(DomainTag.LOGICAL_NOT);
+                return new AST.LogicalNOT(parseUnaryExpression());
             }
             else if (checkReservedWord("new"))
             {
                 throw new NotImplementedException();
-                parseReservedWord("new");
-                return new NewExpr(parseConstructorExpression());
+                //parseReservedWord("new");
+                //return new NewExpr(parseConstructorExpression());
             }
             else
             {
                 throw new NotImplementedException();
-                parseReservedWord("delete");
-                return new DeleteExpr(parseMemberExpression());
+                //parseReservedWord("delete");
+                //return new DeleteExpr(parseMemberExpression());
             }
         }
         // Мультипликативные

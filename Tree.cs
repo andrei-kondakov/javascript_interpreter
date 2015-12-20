@@ -493,6 +493,46 @@ namespace AST
         }
     }
     #region Literals
+    public class Array : Expression
+    {
+        private List<Expression> elements;
+        public Array(List<Expression> elements) : base("Array")
+        {
+            this.elements = elements;
+        }
+        public override string ToString(string prefix, bool isTail)
+        {
+            string result;
+            result = base.ToString(prefix, isTail);
+            for (int i = 0; i < elements.Count - 1; i++)
+            {
+                result += elements[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+            }
+            if (elements.Count > 0)
+            {
+                result += elements[elements.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+            }
+            return result;
+        }
+        public override object Execute()
+        {
+            ES.Array array = new ES.Array();
+            for (int i = 0; i < elements.Count; i++)
+            {
+                var elem = elements[i].Execute();
+                var value = JSInterpreter.GetValue((ES.Type)elem);
+                var desc = new PropertyDescriptor();
+                desc.Attributes["value"] = value;
+                desc.Attributes["writable"] = true;
+                desc.Attributes["enumerable"] = true;
+                desc.Attributes["configurable"] = true;
+                array.DefineOwnProperty(i.ToString(), desc, false);
+            }
+            array.Put("length", new ES.Number(elements.Count), false);
+            return array;
+
+        }
+    }
     public class Number : Expression
     {
         private ES.Number number;

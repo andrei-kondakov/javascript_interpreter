@@ -528,7 +528,7 @@ namespace AST
                 desc.Attributes["configurable"] = true;
                 array.DefineOwnProperty(i.ToString(), desc, false);
             }
-            array.Put("length", new ES.Number(elements.Count), false);
+            //array.Put("length", new ES.Number(elements.Count), false);
             return array;
 
         }
@@ -1278,6 +1278,23 @@ namespace AST
         public GetProperty(Expression left, Expression right)
             : base(".", left, right)
         { }
+        public override object Execute()
+        {
+            var baseReference = left.Execute();
+            var baseValue = JSInterpreter.GetValue((ES.Type)baseReference);
+            var propertyNameReference = right.Execute();
+            string propertyNameValue;
+            if (propertyNameReference is ES.Reference)
+            {
+                propertyNameValue = ((ES.Reference)propertyNameReference).GetReferenceName();
+            }
+            else
+            {
+                propertyNameValue = (ES.Convert.ToString((ES.LanguageType)propertyNameReference)).Value;
+            }
+            return new Reference(baseValue, propertyNameValue, false);
+            
+        }
     }
     #endregion
 

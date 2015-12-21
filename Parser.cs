@@ -732,10 +732,10 @@ namespace JavaScriptInterpreter
                 }
                 else if (checkTokenTag(DomainTag.LSBRACKET))
                 {
-                    throw new NotImplementedException();
                     parseToken(DomainTag.LSBRACKET);
-                    parseExpression();
+                    Expression expr = parseExpression()[0];
                     parseToken(DomainTag.RSBRACKET);
+                    return new AST.GetProperty(primaryExpression, expr);
                 }
                 else if (checkTokenTag(DomainTag.LPARENT))
                 {

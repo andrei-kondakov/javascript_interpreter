@@ -1283,17 +1283,24 @@ namespace AST
             var baseReference = left.Execute();
             var baseValue = JSInterpreter.GetValue((ES.Type)baseReference);
             var propertyNameReference = right.Execute();
-            string propertyNameValue;
-            if (propertyNameReference is ES.Reference)
-            {
-                propertyNameValue = ((ES.Reference)propertyNameReference).GetReferenceName();
-            }
-            else
-            {
-                propertyNameValue = (ES.Convert.ToString((ES.LanguageType)propertyNameReference)).Value;
-            }
-            return new Reference(baseValue, propertyNameValue, false);
+            var propertyNameValue = JSInterpreter.GetValue((ES.Type)propertyNameReference);
+            var propertyNameValueStr = ES.Convert.ToString(propertyNameValue); 
+            return new Reference(baseValue, propertyNameValueStr.Value, false);
             
+        }
+    }
+    class GetPropertyByPoint : BinaryNode
+    {
+        public GetPropertyByPoint(Expression left, Expression right)
+            : base(".", left, right)
+        { }
+        public override object Execute()
+        {
+            var baseReference = left.Execute();
+            var baseValue = JSInterpreter.GetValue((ES.Type)baseReference);
+            var propertyNameReference = right.Execute();
+            var propertyNameValue = ((ES.Reference)propertyNameReference).GetReferenceName();
+            return new Reference(baseValue, propertyNameValue, false);
         }
     }
     #endregion

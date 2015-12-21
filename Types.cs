@@ -258,11 +258,25 @@ namespace ES
             }
             return base.DefineOwnProperty(propertyName, descriptor, needThrow);
         }
+        public override string ToString()
+        {
+            string result = "[";
+            foreach (var key in namedProperties.Keys)
+            {
+                if (key != "length")
+                {
+                    result += Get(key) + ", ";
+                }
+            }
+            result = result.Remove(result.Length - 2);
+            result += "]";
+            return result;
+        }
     }
     public class Object : LanguageType
     {
         // QUESTION m.b. Dicitipnary<string, PropertyDescriptroType> ??!??
-        private Dictionary<string, PropertyDescriptor> namedProperties;   // ассоциирует имя со значением и набором булевых атрибутов
+        protected Dictionary<string, PropertyDescriptor> namedProperties;   // ассоциирует имя со значением и набором булевых атрибутов
         public Dictionary<string, object> InternalProperties;      // внутренние свойства
         /*  Внутренние свойства каждого объекта */
         /*private EcmaType prototype;     // Прототип данного объекта [Object/NULL]
@@ -765,7 +779,7 @@ namespace ES
             object value = Attributes["value"];
             if (Attributes["value"] != null)
             {
-                if (value is ES.Object)
+                if (value is ES.Object && !(value is ES.Array))
                 {
                     return base.ToString();
                 }

@@ -728,7 +728,7 @@ namespace JavaScriptInterpreter
                 if (checkTokenTag(DomainTag.POINT))
                 {
                     parseToken(DomainTag.POINT);
-                    return new GetProperty(primaryExpression, parseMemberExpression());
+                    return new GetPropertyByPoint(primaryExpression, parseMemberExpression());
                 }
                 else if (checkTokenTag(DomainTag.LSBRACKET))
                 {

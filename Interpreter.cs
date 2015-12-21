@@ -189,15 +189,15 @@ namespace JavaScriptInterpreter
             if (val.IsUnresolvableReference()) throw new Exception("ReferenceError");
             if (val.IsPropertyReference())
             {
-                if (val.HasPrimitiveBase() == false)
-                {
-                    // TODO http://es5.javascript.ru/x8.html#x8.7.1
-                    throw new NotImplementedException();
-                }
-                else
-                {
+                //if (val.HasPrimitiveBase() == false)
+                //{
+                //    // TODO http://es5.javascript.ru/x8.html#x8.7.1
+                //    throw new NotImplementedException();
+                //}
+                //else
+                //{
                     return ((ES.Object)baseValue).Get(val.GetReferenceName());
-                }
+                //}
             }
             else
             {
@@ -222,12 +222,12 @@ namespace JavaScriptInterpreter
             }
             else if (val.IsPropertyReference())
             {
-                if (!val.HasPrimitiveBase())
-                {
-                    throw new NotImplementedException();
-                }
-                else
-                {
+                //if (!val.HasPrimitiveBase())
+                //{
+                //    throw new NotImplementedException();
+                //}
+                //else
+                //{
                     ES.Object obj = (ES.Object)baseValue;
                     string propertyName = val.GetReferenceName();
                     bool needThrow = val.IsStrictReference();
@@ -265,7 +265,7 @@ namespace JavaScriptInterpreter
                 //        if (needThrow) throw new Exception("TypeError");
                 //    }
                 //    return false;
-                }
+                //}
             }
             else
             {

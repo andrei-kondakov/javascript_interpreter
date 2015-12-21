@@ -246,6 +246,17 @@ namespace ES
         {
             InternalProperties["class"] = "Array";
             InternalProperties["prototype"] = ES.Null.Value;
+            Put("length", new ES.Number(0), false);
+        }
+        public override bool DefineOwnProperty(string propertyName, PropertyDescriptor descriptor, bool needThrow)
+        {
+            if (!HasProperty(propertyName) && propertyName != "length")
+            {
+                var oldLength = ((ES.Number)Get("length")).Value;
+                var newLength = new ES.Number(oldLength + 1);
+                Put("length", newLength, false);
+            }
+            return base.DefineOwnProperty(propertyName, descriptor, needThrow);
         }
     }
     public class Object : LanguageType
@@ -528,7 +539,7 @@ namespace ES
         /// <param name="descriptor">Дескриптор свойства</param>
         /// <param name="needThrow">Обработка отказов</param>
         /// <returns></returns>
-        public bool DefineOwnProperty(string propertyName, PropertyDescriptor descriptor, bool needThrow)
+        public virtual bool DefineOwnProperty(string propertyName, PropertyDescriptor descriptor, bool needThrow)
         {
             Type current = GetOwnProperty(propertyName);
             bool extensible = (bool)InternalProperties["extensible"];
@@ -826,6 +837,11 @@ namespace ES
             var value = baseValue as LanguageType;
             if (value != null)
             {
+                if (value is ES.Object)
+                {
+                    var baseValueObj = baseValue as ES.Object;
+                    return baseValueObj.Get(referenceName).ToString();
+                }
                 return ES.Convert.ToPrimitive(value, null).ToString();
             }
             else

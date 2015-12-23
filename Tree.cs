@@ -700,6 +700,34 @@ namespace AST
             return result;
         }
     }
+    public class UnaryPlus : UnaryNode
+    {
+        public UnaryPlus(Expression node) : base("+(un)", node)
+        { }
+        public override object Execute()
+        {
+            var expr = node.Execute();
+            return ES.Convert.ToNumber((ES.LanguageType)expr);
+        }
+    }
+    public class UnaryMinus : UnaryNode
+    {
+        public UnaryMinus(Expression node) : base("-(un)", node)
+        { }
+        public override object Execute()
+        {
+            var expr = node.Execute();
+            var oldValue = ES.Convert.ToNumber((ES.LanguageType)expr);
+            if (double.IsNaN(oldValue.Value))
+            {
+                return new ES.Number(double.NaN);
+            }
+            else
+            {
+                return new ES.Number(-oldValue.Value);
+            }
+        }
+    }
     public class LogicalNOT : UnaryNode
     {
         public LogicalNOT(Expression node) : base("!", node)

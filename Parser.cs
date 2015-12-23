@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Reflection;
 using System.IO;
 using AST;
 
@@ -834,16 +830,16 @@ namespace JavaScriptInterpreter
             }
             else if (checkTokenTag(DomainTag.PLUS) || checkTokenTag(DomainTag.MINUS))
             {
-                throw new NotImplementedException();
-                //if (checkTokenTag(DomainTag.PLUS))
-                //{
-                //    parseToken(DomainTag.PLUS);
-                //}
-                //else
-                //{
-                //    parseToken(DomainTag.MINUS);
-                //}
-                //parseUnaryExpression();
+                if (checkTokenTag(DomainTag.PLUS))
+                {
+                    parseToken(DomainTag.PLUS);
+                    return new AST.UnaryPlus(parseUnaryExpression());
+                }
+                else
+                {
+                    parseToken(DomainTag.MINUS);
+                    return new AST.UnaryMinus(parseUnaryExpression());
+                }
             }
             else if (checkTokenTag(DomainTag.INCREMENT) || checkTokenTag(DomainTag.DECREMENT))
             {

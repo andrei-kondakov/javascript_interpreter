@@ -261,14 +261,19 @@ namespace ES
         public override string ToString()
         {
             string result = "[";
-            foreach (var key in namedProperties.Keys)
+            List<string> sorted_keys = namedProperties.Keys.ToList();
+            sorted_keys.Sort();
+            foreach (var key in sorted_keys)
             {
                 if (key != "length")
                 {
                     result += Get(key) + ", ";
                 }
             }
-            result = result.Remove(result.Length - 2);
+            if (result.Length > 1)
+            {
+                result = result.Remove(result.Length - 2);
+            }
             result += "]";
             return result;
         }

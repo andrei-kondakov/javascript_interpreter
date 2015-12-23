@@ -17,7 +17,7 @@ namespace JavaScriptInterpreter
     }
     public static class JSInterpreter
     {
-        private static bool debug = true;
+        private static bool debug = false;
         public static Stack<ExecutionContext> ExecutionContexts = new Stack<ExecutionContext>();
         private static ES.Object globalObject;
         public static ES.Object prototypeObject;
@@ -31,7 +31,7 @@ namespace JavaScriptInterpreter
             Queue<Token> lexems = new Queue<Token>();
             globalObject = new ES.Object();
             globalObject.InternalProperties["prototype"] = ES.Null.Value;
-            globalObject.InternalProperties["class"] = "global_object";
+            globalObject.InternalProperties["class"] = "GlobalObject";
             globalObject.Put("_proto_", ES.Null.Value, false);
             PropertyDescriptor globalDesc = new PropertyDescriptor();
             globalDesc.Attributes["value"] = globalObject;
@@ -51,7 +51,7 @@ namespace JavaScriptInterpreter
             prototypeObject = new ES.Object();
             prototypeObject.Put("_proto_", ES.Null.Value, false);
             prototypeObject.InternalProperties["prototype"] = ES.Null.Value;
-            prototypeObject.InternalProperties["class"] = "Prototype of Objects";
+            prototypeObject.InternalProperties["class"] = "PrototypeOfObjects";
 
             try
             {

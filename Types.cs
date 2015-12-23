@@ -287,19 +287,27 @@ namespace ES
         public Object()
         {
             namedProperties = new Dictionary<string, PropertyDescriptor>();
+            namedProperties.Add("_proto_", new PropertyDescriptor(JSInterpreter.prototypeObject));
             InternalProperties = new Dictionary<string, object>();
             InternalProperties["extensible"] = true;
             InternalProperties["class"] = "Object";
         }
         public override string ToString()
         {
-            string result = base.ToString();
-            result += "{";
+            //string result = base.ToString();
+            string result = InternalProperties["class"] as string;
+            result += " {";
             foreach (KeyValuePair<string, PropertyDescriptor> kvp in namedProperties)
             {
-                result += kvp.Key + ": " + kvp.Value + ", ";
+                if (!kvp.Key.StartsWith("_")) // внутренние свойства не печатаем
+                {
+                    result += kvp.Key + ": " + kvp.Value + ", ";
+                }
             }
-            result = result.Remove(result.Length - 2);
+            if (namedProperties.Count > 1)
+            {
+                result = result.Remove(result.Length - 2);
+            }
             result += "}";
             return result;
         }
@@ -348,11 +356,12 @@ namespace ES
             }
             else
             {
-                var prototype = InternalProperties["prototype"];
-                if (property is Undefined)
-                {
-                    return Undefined.Value; 
-                }
+                //var prototype = InternalProperties["prototype"];
+                var prototype = namedProperties["_proto_"].Attributes["value"];
+                //if (property is Undefined)
+                //{
+                //    return Undefined.Value; 
+                //}
                 if (prototype.Equals(ES.Null.Value))
                 {
                     return Undefined.Value;
@@ -735,6 +744,14 @@ namespace ES
         public PropertyDescriptor()
         {
             Attributes = new Hashtable();
+        }
+        public PropertyDescriptor(ES.Type value)
+        {
+            Attributes = new Hashtable();
+            Attributes["value"] = value;
+            Attributes["enumerable"] = false;
+            Attributes["configurable"] = true;
+            Attributes["writable"] = true;
         }
         public void SetDefaultValue(string attribute)
         {

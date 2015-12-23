@@ -565,7 +565,7 @@ namespace AST
         public Null() : base("null") { }
         public override object Execute()
         {
-            return null;
+            return ES.Null.Value;
         }
     }
     public class Boolean : Expression

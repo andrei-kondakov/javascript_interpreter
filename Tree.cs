@@ -596,13 +596,16 @@ namespace AST
         {
             string result;
             result = base.ToString(prefix, isTail);
-            for (int i = 0; i < properties.Count - 1; i++)
+            if (properties != null)
             {
-                result += properties[i].ToString(prefix + (isTail ? "    " : "│   "), false);
-            }
-            if (properties.Count > 0)
-            {
-                result += properties[properties.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+                for (int i = 0; i < properties.Count - 1; i++)
+                {
+                    result += properties[i].ToString(prefix + (isTail ? "    " : "│   "), false);
+                }
+                if (properties.Count > 0)
+                {
+                    result += properties[properties.Count - 1].ToString(prefix + (isTail ? "    " : "│   "), true);
+                }
             }
             return result;
         }
@@ -614,11 +617,14 @@ namespace AST
             //globalObject.InternalProperties["class"] = "global_object";
 
             obj.InternalProperties["prototype"] = JSInterpreter.prototypeObject;
-            foreach (ObjectProperty property in properties)
+            if (properties != null)
             {
-                string propertyName = property.Name;
-                var propertyDesc = (PropertyDescriptor)property.Execute();
-                obj.DefineOwnProperty(propertyName, propertyDesc, false);
+                foreach (ObjectProperty property in properties)
+                {
+                    string propertyName = property.Name;
+                    var propertyDesc = (PropertyDescriptor)property.Execute();
+                    obj.DefineOwnProperty(propertyName, propertyDesc, false);
+                }
             }
             return obj;
                 

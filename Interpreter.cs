@@ -60,7 +60,7 @@ namespace JavaScriptInterpreter
                 if (sourceCode != null)
                 {
                     string program = File.ReadAllText(sourceCode);
-                    Console.WriteLine(program);
+                    //Console.WriteLine(program);
                     Lexer lexer = new Lexer(program);
                     while ((token = lexer.NextToken()).Tag != DomainTag.END_OF_PROGRAM)
                     {
@@ -73,17 +73,19 @@ namespace JavaScriptInterpreter
                         {
                             sw.WriteLine("################################# INPUT #######################################");
                             sw.WriteLine(program);
+                            sw.WriteLine("-----Lexer result:");
+                            foreach (Token tkn in lexems)
+                            {
+                                sw.WriteLine(tkn.ToString());
+                            }
                             //sw.WriteLine("################################## END ########################################");
-                            sw.WriteLine("############################## PARSE TREE #####################################");
+                            sw.WriteLine("############################## AST-TREE #####################################");
                         }
-                        Console.WriteLine("-----Lexer result:");
-                        foreach (Token tkn in lexems)
-                        {
-                            Console.WriteLine(tkn.ToString());
-                        }
+                        
                     }
                     Parser parser = new Parser(lexems);
-                    parser.Start();
+                    AST.Node ast = parser.Start();
+                    ast.Execute();
                 }
                 else
                 {
@@ -172,7 +174,7 @@ namespace JavaScriptInterpreter
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex.Message);
             }
             finally
             {

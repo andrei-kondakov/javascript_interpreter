@@ -17,7 +17,7 @@ namespace JavaScriptInterpreter
     }
     public static class JSInterpreter
     {
-        private static bool debug = true;
+        private static bool debug = false;
         public static Stack<ExecutionContext> ExecutionContexts = new Stack<ExecutionContext>();
         private static ES.Object globalObject;
         public static ES.Object prototypeObject;

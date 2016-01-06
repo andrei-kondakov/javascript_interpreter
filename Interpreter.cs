@@ -31,7 +31,8 @@ namespace JavaScriptInterpreter
             Queue<Token> lexems = new Queue<Token>();
             globalObject = new ES.Object();
             globalObject.InternalProperties["prototype"] = ES.Null.Value;
-            globalObject.InternalProperties["class"] = "global_object";
+            globalObject.InternalProperties["class"] = "GlobalObject";
+            globalObject.Put("_proto_", ES.Null.Value, false);
             PropertyDescriptor globalDesc = new PropertyDescriptor();
             globalDesc.Attributes["value"] = globalObject;
             globalDesc.Attributes["writable"] = false;
@@ -48,8 +49,9 @@ namespace JavaScriptInterpreter
             //Tачальное значение внутреннего свойства [[Extensible]] равно true.
 
             prototypeObject = new ES.Object();
+            prototypeObject.Put("_proto_", ES.Null.Value, false);
             prototypeObject.InternalProperties["prototype"] = ES.Null.Value;
-            prototypeObject.InternalProperties["class"] = "Object";
+            prototypeObject.InternalProperties["class"] = "PrototypeOfObjects";
 
             try
             {
